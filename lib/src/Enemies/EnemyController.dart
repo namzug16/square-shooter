@@ -32,18 +32,20 @@ class EnemyController extends StateNotifier<Enemy> {
     final angle = center.angleTo(aim);
     aimAngle = angle;
     _setAim();
+    if(isAlive()){
     _updateRotation();
     _move(x);
     if(!isShooting) _shoot();
+    }
     final rect = Rect.fromLTWH(
         state.position!.dx, state.position!.dy, enemySize, enemySize);
     // * ===========================> Bullets
     if (bullets.length > 0) {
       for (var b in bullets) {
         b.renderBullet(c);
-        // if (b.getRect().outsideRegion(Rect.fromLTWH(0, 0, x.width, x.height))) {
-        //   bullets.remove(b);
-        // }
+        if (b.getRect().outsideRegion(Rect.fromLTWH(0, 0, x.width, x.height))) {
+          bullets.remove(b);
+        }
       }
     }
 
@@ -55,27 +57,46 @@ class EnemyController extends StateNotifier<Enemy> {
     c.restore();
 
 
+    // * ===========================> PlayerBulletsDetection
+    if(read(playerProvider.notifier).bullets.length > 0){
+      final enemyBullets = read(playerProvider.notifier).bullets;
+      for (var b in enemyBullets) {
+        if (b.getRect().collides(rect)) {
+          state = state.copyWith(color: Colors.redAccent, health: state.health! - b.damage);
+          _colorChange();
+          read(playerProvider.notifier).bullets.remove(b);
+        }
+      }
+    }
+
+
     // * ==========================> AimLine
-    c.save();
-    final aimPaint = Paint()
-      ..color = Colors.blueAccent
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    c.drawLine(
+        if(isAlive()){
+      c.save();
+      final aimPaint = Paint()
+        ..color = Colors.blueAccent
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round;
+      c.drawLine(
+          center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
+          center + Offset(aimSize * sin(angle), aimSize * cos(angle)),
+          aimPaint);
+      c.drawLine(
+        center +
+            Offset(aimSizeStart * sin(angle + pi / 7),
+                aimSizeStart * cos(angle + pi / 7)),
         center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
-        center + Offset(aimSize * sin(angle), aimSize * cos(angle)),
-        aimPaint);
-    c.drawLine(
-      center + Offset(aimSizeStart * sin(angle+pi/7), aimSizeStart * cos(angle+pi/7)),
-      center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
-      aimPaint,
-    );
-    c.drawLine(
-      center + Offset(aimSizeStart * sin(angle-pi/7), aimSizeStart * cos(angle-pi/7)),
-      center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
-      aimPaint,
-    );
-    c.restore();
+        aimPaint,
+      );
+      c.drawLine(
+        center +
+            Offset(aimSizeStart * sin(angle - pi / 7),
+                aimSizeStart * cos(angle - pi / 7)),
+        center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
+        aimPaint,
+      );
+      c.restore();
+    }
   }
 
   Offset oldDirection = Offset.zero;
@@ -83,6 +104,12 @@ class EnemyController extends StateNotifier<Enemy> {
 
   // * ================================= >
 
+  bool isAlive(){
+    if(state.health! > 0) return true;
+    return false;
+  }
+
+  // * ================================= > Private
   void _setAim() {
     aim = read(playerProvider.notifier).getCenter();
   }
@@ -93,6 +120,7 @@ class EnemyController extends StateNotifier<Enemy> {
       state = state.copyWith(color: Colors.blueAccent);
       _colorChange();
       bullets.add(Bullet(
+        damage: 15,
         direction: aimAngle,
         color: Colors.blueAccent,
         position: Rect.fromLTWH(
@@ -119,7 +147,7 @@ class EnemyController extends StateNotifier<Enemy> {
   }
 
   void _move(x) {
-    // if(_needsToMove(x)) _getDirection();
+    if(_needsToMove(x)) _getDirection();
     if (state.direction! == Offset.zero) {
       if (state.velocity! > 0) {
         state = state.copyWith(
@@ -161,7 +189,7 @@ class EnemyController extends StateNotifier<Enemy> {
   }
 
   void _updateRotation(){
-    state = state.copyWith(rotation: state.rotation! + rotationValue + rotationValue*state.velocity!/10);
+    state = state.copyWith(rotation: state.rotation! + rotationValue + rotationValue*state.velocity!/5);
   }
 
   void _colorChange(){

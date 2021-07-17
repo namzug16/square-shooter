@@ -19,7 +19,7 @@ class Bullet {
   final Offset position;
 
   static const double bulletSize = 5.0;
-  static const double velocity = 20.0;
+  static const double velocity = 15.0;
 
   Offset bulletPosition = Offset.zero;
   void renderBullet(Canvas canvas){

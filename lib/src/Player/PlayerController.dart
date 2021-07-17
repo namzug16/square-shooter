@@ -30,8 +30,10 @@ class PlayerController extends StateNotifier<Player> {
     final center = getCenter();
     final angle = center.angleTo(aim);
     aimAngle = angle;
-    _updateRotation();
-    _move(x);
+    if(isAlive()){
+      _updateRotation();
+      _move(x);
+    }
     final rect = Rect.fromLTWH(
         state.position!.dx, state.position!.dy, playerSize, playerSize);
 
@@ -39,32 +41,20 @@ class PlayerController extends StateNotifier<Player> {
     if (bullets.length > 0) {
       for (var b in bullets) {
         b.renderBullet(c);
-        // print(Rect.fromLTWH(0, 0, x.width, x.height));
-        // print(b.getRect());
-        // if (b.getRect().outsideRegion1(Rect.fromLTWH(0, 0, x.width, x.height))) {
-        //   bullets.remove(b);
-        // }
+        if (b.getRect().outsideRegion(Rect.fromLTWH(0, 0, x.width, x.height))) {
+          bullets.remove(b);
+        }
       }
     }
-
-    // Rect.fromLTRB(0.0, 0.0, 1249.0, 932.0)
-    // Rect.fromLTRB(20.0, 0.0, 50.0, 5.0)
-    // Rect.fromLTRB(0.0, 0.0, 1249.0, 932.0)
-    // Rect.fromLTRB(40.0, 0.0, 70.0, 5.0)
-    // Rect.fromLTRB(0.0, 0.0, 1249.0, 932.0)
-    // Rect.fromLTRB(60.0, 0.0, 90.0, 5.0)
-    // Rect.fromLTRB(0.0, 0.0, 1249.0, 932.0)
-
-
     // * ===========================> EnemyBulletsDetection
     if(read(enemyProvider.notifier).bullets.length > 0){
       final enemyBullets = read(enemyProvider.notifier).bullets;
-      print(enemyBullets.length);
       for (var b in enemyBullets) {
-        // if (b.getRect().intersect(rect).width > 0 && b.getRect().intersect(rect).height > 0) {
-        //   print(true);
-        //   read(enemyProvider.notifier).deleteBullet(enemyBullets.indexOf(b));
-        // }
+        if (b.getRect().collides(rect)) {
+          state = state.copyWith(color: Colors.redAccent, health: state.health! - b.damage);
+          _colorChange();
+          read(enemyProvider.notifier).bullets.remove(b);
+        }
       }
     }
 
@@ -77,26 +67,28 @@ class PlayerController extends StateNotifier<Player> {
 
 
     // * ==========================> AimLine
-    c.save();
-    final aimPaint = Paint()
-      ..color = Colors.greenAccent
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    c.drawLine(
+    if(isAlive()){
+      c.save();
+      final aimPaint = Paint()
+        ..color = Colors.greenAccent
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round;
+      c.drawLine(
+          center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
+          center + Offset(aimSize * sin(angle), aimSize * cos(angle)),
+          aimPaint);
+      c.drawLine(
+        center + Offset(aimSizeStart * sin(angle+pi/7), aimSizeStart * cos(angle+pi/7)),
         center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
-        center + Offset(aimSize * sin(angle), aimSize * cos(angle)),
-        aimPaint);
-    c.drawLine(
-      center + Offset(aimSizeStart * sin(angle+pi/7), aimSizeStart * cos(angle+pi/7)),
-      center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
-      aimPaint,
-    );
-    c.drawLine(
-      center + Offset(aimSizeStart * sin(angle-pi/7), aimSizeStart * cos(angle-pi/7)),
-      center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
-      aimPaint,
-    );
-    c.restore();
+        aimPaint,
+      );
+      c.drawLine(
+        center + Offset(aimSizeStart * sin(angle-pi/7), aimSizeStart * cos(angle-pi/7)),
+        center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
+        aimPaint,
+      );
+      c.restore();
+    }
   }
 
   Offset oldDirection = Offset.zero;
@@ -185,15 +177,17 @@ class PlayerController extends StateNotifier<Player> {
   }
 
   void shoot() {
-    state = state.copyWith(color: Colors.greenAccent);
-    _colorChange();
-    bullets.add(Bullet(
-      direction: aimAngle,
-      color: Colors.greenAccent,
-      position: Rect.fromLTWH(
-              state.position!.dx, state.position!.dy, playerSize, playerSize)
-          .center,
-    ));
+    if(isAlive()){
+      state = state.copyWith(color: Colors.greenAccent);
+      _colorChange();
+      bullets.add(Bullet(
+        direction: aimAngle,
+        color: Colors.greenAccent,
+        position: Rect.fromLTWH(
+                state.position!.dx, state.position!.dy, playerSize, playerSize)
+            .center,
+      ));
+    }
   }
 
   Offset getCenter(){
@@ -202,6 +196,11 @@ class PlayerController extends StateNotifier<Player> {
 
   double getVelocity(){
     return state.velocity!;
+  }
+
+  bool isAlive(){
+    if(state.health! > 0) return true;
+    return false;
   }
   // * ================================= >
   void _move(x) {
@@ -235,7 +234,7 @@ class PlayerController extends StateNotifier<Player> {
   }
 
   void _colorChange(){
-    Timer(Duration(milliseconds: 64), (){
+    Timer(Duration(milliseconds: 100), (){
       state = state.copyWith(color: Colors.white);
     });
   }
