@@ -1,50 +1,102 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:square_shooter/src/Bullets/Bullets.dart';
+import 'package:square_shooter/src/Enemies/EnemyController.dart';
 import 'package:square_shooter/src/Player/Player.dart';
 import '../Extensions/OffsetExtension.dart';
 import '../Extensions/RectExtensions.dart';
 
 class PlayerController extends StateNotifier<Player> {
-  PlayerController() : super(Player());
+  PlayerController(this.read) : super(Player());
+
+  final Reader read;
 
   static const double playerSize = 50;
   static const int maxVelocity = 15;
   static const double acceleration = 0.3;
-  static const double aimSize = 200;
+  static const double rotationValue = pi/40;
+  static const double aimSizeStart = playerSize + 20;
+  static const double aimSize = 100;
 
   Offset aim = Offset.zero;
   double aimAngle = 0;
-  List<SimpleBullet> bullets = [];
+  List<Bullet> bullets = [];
 
   void renderPlayer(Canvas c, x) {
-    final center = (state.position! + Offset(playerSize / 2, playerSize / 2));
+    final center = getCenter();
     final angle = center.angleTo(aim);
     aimAngle = angle;
-
+    _updateRotation();
     _move(x);
     final rect = Rect.fromLTWH(
         state.position!.dx, state.position!.dy, playerSize, playerSize);
-    // print((state.position! + Offset(playerSize/2, playerSize/2)).angleToDeg(aim));
-    c.save();
-    c.drawRect(rect, Paint()..color = state.color!);
-    c.drawLine(
-        center,
-        center + Offset(aimSize * sin(angle), aimSize * cos(angle)),
-        Paint()..color = Colors.amberAccent);
-    c.restore();
 
+    // * ===========================> Bullets
     if (bullets.length > 0) {
       for (var b in bullets) {
         b.renderBullet(c);
-        if (b.getRect().outsideRegion(Rect.fromLTWH(0, 0, x.width, x.height))) {
-          bullets.remove(b);
-        }
+        // print(Rect.fromLTWH(0, 0, x.width, x.height));
+        // print(b.getRect());
+        // if (b.getRect().outsideRegion1(Rect.fromLTWH(0, 0, x.width, x.height))) {
+        //   bullets.remove(b);
+        // }
       }
     }
+
+    // Rect.fromLTRB(0.0, 0.0, 1249.0, 932.0)
+    // Rect.fromLTRB(20.0, 0.0, 50.0, 5.0)
+    // Rect.fromLTRB(0.0, 0.0, 1249.0, 932.0)
+    // Rect.fromLTRB(40.0, 0.0, 70.0, 5.0)
+    // Rect.fromLTRB(0.0, 0.0, 1249.0, 932.0)
+    // Rect.fromLTRB(60.0, 0.0, 90.0, 5.0)
+    // Rect.fromLTRB(0.0, 0.0, 1249.0, 932.0)
+
+
+    // * ===========================> EnemyBulletsDetection
+    if(read(enemyProvider.notifier).bullets.length > 0){
+      final enemyBullets = read(enemyProvider.notifier).bullets;
+      print(enemyBullets.length);
+      for (var b in enemyBullets) {
+        // if (b.getRect().intersect(rect).width > 0 && b.getRect().intersect(rect).height > 0) {
+        //   print(true);
+        //   read(enemyProvider.notifier).deleteBullet(enemyBullets.indexOf(b));
+        // }
+      }
+    }
+
+    // * ==========================> Player
+    c.save();
+    c.translate(rect.center.dx, rect.center.dy);
+    c.rotate(state.rotation!);
+    c.drawRect(Offset(-playerSize/2, -playerSize/2) & rect.size, Paint()..color = state.color!);
+    c.restore();
+
+
+    // * ==========================> AimLine
+    c.save();
+    final aimPaint = Paint()
+      ..color = Colors.greenAccent
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    c.drawLine(
+        center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
+        center + Offset(aimSize * sin(angle), aimSize * cos(angle)),
+        aimPaint);
+    c.drawLine(
+      center + Offset(aimSizeStart * sin(angle+pi/7), aimSizeStart * cos(angle+pi/7)),
+      center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
+      aimPaint,
+    );
+    c.drawLine(
+      center + Offset(aimSizeStart * sin(angle-pi/7), aimSizeStart * cos(angle-pi/7)),
+      center + Offset(aimSizeStart * sin(angle), aimSizeStart * cos(angle)),
+      aimPaint,
+    );
+    c.restore();
   }
 
   Offset oldDirection = Offset.zero;
@@ -133,15 +185,24 @@ class PlayerController extends StateNotifier<Player> {
   }
 
   void shoot() {
-    bullets.add(SimpleBullet(
+    state = state.copyWith(color: Colors.greenAccent);
+    _colorChange();
+    bullets.add(Bullet(
       direction: aimAngle,
-      color: Colors.white,
-      position: Rect.fromLTWH(state.position!.dx, state.position!.dy, playerSize, playerSize).center,
+      color: Colors.greenAccent,
+      position: Rect.fromLTWH(
+              state.position!.dx, state.position!.dy, playerSize, playerSize)
+          .center,
     ));
-    print('shot');
-    print(bullets.length);
   }
 
+  Offset getCenter(){
+    return (state.position! + Offset(playerSize / 2, playerSize / 2));
+  }
+
+  double getVelocity(){
+    return state.velocity!;
+  }
   // * ================================= >
   void _move(x) {
     if (state.direction! == Offset.zero) {
@@ -168,7 +229,17 @@ class PlayerController extends StateNotifier<Player> {
       );
     }
   }
+
+  void _updateRotation(){
+    state = state.copyWith(rotation: state.rotation! + rotationValue + rotationValue*state.velocity!/5);
+  }
+
+  void _colorChange(){
+    Timer(Duration(milliseconds: 64), (){
+      state = state.copyWith(color: Colors.white);
+    });
+  }
 }
 
 final playerProvider = StateNotifierProvider<PlayerController, Player>(
-    (ref) => PlayerController());
+    (ref) => PlayerController(ref.read));
