@@ -2,8 +2,8 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:square_shooter/src/Explosions/Explosion.dart';
 import '../Extensions/OffsetExtension.dart';
-
 
 class Bullet {
   Bullet({
@@ -18,28 +18,55 @@ class Bullet {
   final Color color;
   final Offset position;
 
-  static const double bulletSize = 5.0;
-  static const double velocity = 15.0;
+  static const double bulletSize = 5.0; // 5
+  static const double velocity = 50.0; // 50
 
-  Offset bulletPosition = Offset.zero;
-  void renderBullet(Canvas canvas){
+  Offset _bulletPosition = Offset.zero;
+  bool _shouldDestroy = false;
+
+  bool get canDamage => !_shouldDestroy;
+  bool get shouldBeEliminated => _shouldBeEliminated;
+  bool _shouldBeEliminated = false;
+
+  void renderBullet(Canvas c) {
+    Offset pos = Offset.zero;
+    if(!_shouldDestroy){
     _move();
-    final pos = _getPosition();
-    canvas.save();
-    canvas.drawCircle(pos, bulletSize, Paint()..color=color);
-    canvas.restore();
+    pos = _getPosition();
+    }
+    if (!_shouldDestroy) {
+      c.save();
+      c.drawCircle(pos, bulletSize, Paint()..color = color);
+      c.restore();
+    }else{
+      _explode(c);
+    }
   }
 
-  void _move(){
-    bulletPosition = Offset(bulletPosition.dx + velocity, bulletPosition.dy);
-  }
-
-  Rect  getRect(){
+  Rect getRect() {
     return Rect.fromCircle(center: _getPosition(), radius: bulletSize);
   }
 
-  Offset _getPosition(){
-    return bulletPosition.rotateWithPivot(Offset(position.dx - bulletSize/2, position.dy - bulletSize/2),pi/2 - direction);
+  void destroy() {
+    _shouldDestroy = true;
   }
 
+  // * ===============> Private
+
+  Explosion? e;
+  void _explode(Canvas c){
+    if(e == null) e = Explosion(isSquare: false, origin: _getPosition(), color: color, amountParticles: 50, sizeParticles: 2);
+    e!.renderExplosion(c);
+    if(e!.isFinished) _shouldBeEliminated = true;
+  }
+
+  void _move() {
+    _bulletPosition = Offset(_bulletPosition.dx + velocity, _bulletPosition.dy);
+  }
+
+  Offset _getPosition() {
+    return _bulletPosition.rotateWithPivot(
+        Offset(position.dx - bulletSize / 2, position.dy - bulletSize / 2),
+        pi / 2 - direction);
+  }
 }

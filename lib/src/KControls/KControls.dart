@@ -15,26 +15,22 @@ class KControls extends HookWidget {
 
     final playerController = useProvider(playerProvider.notifier);
 
-    return GestureDetector(
-      onTapDown: (_){
-        playerController.shoot();
+    return RawKeyboardListener(
+      autofocus: true,
+      focusNode: node,
+      onKey: (RawKeyEvent data){
+        if(data.logicalKey.keyLabel == "k"){
+          playerController.shoot(data);
+        }else if(data.logicalKey.keyLabel == "l"){
+          playerController.activateLaserBeam(data);
+        }else{
+          playerController.setDirection(data);
 
+        }
       },
-      child: MouseRegion(
-        onHover: (PointerHoverEvent details){
-          playerController.setAim(details.position);
-        },
-        child: RawKeyboardListener(
-          autofocus: true,
-          focusNode: node,
-          onKey: (RawKeyEvent data){
-            playerController.setDirection(data);
-          },
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height,
-          ),
-        ),
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width,
+        height: MediaQuery.of(context).size.height,
       ),
     );
   }

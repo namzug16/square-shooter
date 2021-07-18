@@ -1,7 +1,21 @@
-
 import 'dart:ui';
+import './OffsetExtension.dart';
 
 extension RectExtensions on Rect{
+
+  bool intersectsLine(Offset p1, Offset p2){
+    final List<List<Offset>> sides = [
+      [topLeft, topRight],
+      [topRight, bottomRight],
+      [bottomRight, bottomLeft],
+      [bottomLeft, topLeft],
+    ];
+    for(var side in sides){
+      final Offset? intersection =  side[0].lineIntersection(side[1], p1, p2);
+      if(intersection != null) return true;
+    }
+    return false;
+  }
 
   Rect scale(double scale){
     return Rect.fromCenter(center: center, width: width*scale, height: height*scale);
@@ -21,13 +35,5 @@ extension RectExtensions on Rect{
     final Rect intersection = this.intersect(other);
     if(intersection.width > 0 && intersection.height > 0) return true;
     return false;
-  }
-
-  bool overlaps(Rect other) {
-    if (right <= other.left || other.right <= left)
-      return false;
-    if (bottom <= other.top || other.bottom <= top)
-      return false;
-    return true;
   }
 }
