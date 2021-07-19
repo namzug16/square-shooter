@@ -10,7 +10,7 @@ part 'Enemy.freezed.dart';
 class Enemy with _$Enemy {
   factory Enemy({
     @Default(Offset(600, 300)) Offset? position,
-    @Default(Offset(-1, 0)) Offset? direction,
+    @Default(Offset(0, 0)) Offset? direction,
     @Default(0) double? velocity,
     @Default(0) double? rotation,
     @Default(100) int? health,

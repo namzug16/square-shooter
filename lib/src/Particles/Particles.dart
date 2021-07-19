@@ -23,7 +23,6 @@ class Particle {
   Offset _position = Offset.zero;
   double get opacity => _opacity;
   double _opacity = 1;
-  double _rotation = 0;
 
   void renderParticle(Canvas c) {
 
@@ -34,7 +33,6 @@ class Particle {
     c.translate(origin.dx, origin.dy);
     c.rotate(direction);
     if(isSquare){
-      // c.rotate(_rotation);
       c.drawRect(Rect.fromCircle(center: _position, radius: size), paint);
     }else{
       c.drawCircle(_position - Offset(size/2, size/2), size, paint);
@@ -51,6 +49,5 @@ class Particle {
     _position += Offset(_velocity!, 0);
     if(_opacity > 0) _opacity -= 0.05;
     if(_opacity < 0) _opacity = 0;
-    if(isSquare) _rotation += 0.1;
   }
 }

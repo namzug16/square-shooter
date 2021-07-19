@@ -18,8 +18,8 @@ class Bullet {
   final Color color;
   final Offset position;
 
-  static const double bulletSize = 5.0; // 5
-  static const double velocity = 50.0; // 50
+  static const double bulletSize = 15.0; // 5
+  static const double velocity = 25.0; // 50
 
   Offset _bulletPosition = Offset.zero;
   bool _shouldDestroy = false;

@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:square_shooter/src/Bullets/Bullets.dart';
 import 'package:square_shooter/src/Bullets/LaserBeam.dart';
 import 'package:square_shooter/src/Enemies/EnemyController.dart';
+import 'package:square_shooter/src/Explosions/Explosion.dart';
 import 'package:square_shooter/src/Player/Player.dart';
 import '../Extensions/OffsetExtension.dart';
 import '../Extensions/RectExtensions.dart';
@@ -24,15 +25,18 @@ class PlayerController extends StateNotifier<Player> {
   static const double aimSizeStart = playerSize + 20;
   static const double aimSize = 100;
 
-  Offset aim = Offset.zero;
-  double aimAngle = 0;
+  Offset _aim = Offset.zero;
+  double _aimAngle = 0;
   List<Bullet> bullets = [];
   LaserBeam? laserBeam;
 
+  bool get gameOver => _gameOver;
+  bool _gameOver = false;
+
   void renderPlayer(Canvas c, x) {
     final center = getCenter();
-    final angle = center.angleTo(aim);
-    aimAngle = angle;
+    final angle = center.angleTo(_aim);
+    _aimAngle = angle;
     if (isAlive()) {
       _updateRotation();
       _setAim();
@@ -40,7 +44,7 @@ class PlayerController extends StateNotifier<Player> {
     }
     Rect rect = Rect.fromLTWH(
         state.position!.dx , state.position!.dy, playerSize, playerSize);
-    if(isShooting) rect.scale(0.3);
+    if(_isShooting) rect.scale(0.3);
 
 
     // * ===========================> Bullets
@@ -60,7 +64,7 @@ class PlayerController extends StateNotifier<Player> {
       for (var b in enemyBullets) {
         // ? =============> In case bullets collide with other bullets
         for(var pb in bullets){
-          if(pb.canDamage && pb.getRect().collides(b.getRect())){
+          if( b.canDamage && pb.canDamage && pb.getRect().collides(b.getRect())){
             pb.destroy();
             b.destroy();
           }
@@ -69,12 +73,12 @@ class PlayerController extends StateNotifier<Player> {
         }
 
         // ? ===========> Damage
-        // if (b.getRect().collides(rect)) {
+        // if ( b.canDamage && b.getRect().collides(rect)) {
         //   state = state.copyWith(
         //       color: Colors.redAccent, health: state.health! - b.damage);
-        //   isHurt = true;
+        //   _isHurt = true;
         //   _colorChange();
-        //   read(enemyProvider.notifier).bullets.remove(b);
+        //   b.destroy();
         // }
       }
     }
@@ -90,15 +94,19 @@ class PlayerController extends StateNotifier<Player> {
     _verifyLaserBeamEnemy();
 
     // * ==========================> Player
-    c.save();
-    c.translate(rect.center.dx, rect.center.dy);
-    c.rotate(state.rotation!);
-    c.drawRect(Offset(-playerSize / 2, -playerSize / 2) & rect.size,
-        Paint()..color = state.color!);
-    c.restore();
+      if(isAlive())  {
+      c.save();
+      c.translate(rect.center.dx, rect.center.dy);
+      c.rotate(state.rotation!);
+      c.drawRect(Offset(-playerSize / 2, -playerSize / 2) & rect.size,
+          Paint()..color = state.color!);
+      c.restore();
+    }else{
+        _destroy(c);
+      }
 
     // * ==========================> AimLine
-    if (isAlive() && isShooting) {
+    if (isAlive() && _isShooting) {
       c.save();
       final aimPaint = Paint()
         ..color = Colors.greenAccent
@@ -126,9 +134,9 @@ class PlayerController extends StateNotifier<Player> {
     }
   }
 
-  Offset oldDirection = Offset.zero;
-  Offset direction = Offset.zero;
-  bool overrideDirection = false;
+  Offset _oldDirection = Offset.zero;
+  Offset _direction = Offset.zero;
+  bool _overrideDirection = false;
 
   void setDirection(RawKeyEvent data) {
     if(!isActiveLB){
@@ -136,93 +144,94 @@ class PlayerController extends StateNotifier<Player> {
         switch (data.character) {
           case "a":
             if (state.direction!.dx == 0) {
-              direction = Offset(-1, state.direction!.dy);
+              _direction = Offset(-1, state.direction!.dy);
             } else if (state.direction!.dx == 1) {
-              direction = Offset(0, state.direction!.dy);
-              overrideDirection = true;
+              _direction = Offset(0, state.direction!.dy);
+              _overrideDirection = true;
             }
             break;
           case "w":
             if (state.direction!.dy == 0) {
-              direction = Offset(state.direction!.dx, -1);
+              _direction = Offset(state.direction!.dx, -1);
             } else if (state.direction!.dy == 1) {
-              direction = Offset(state.direction!.dx, 0);
-              overrideDirection = true;
+              _direction = Offset(state.direction!.dx, 0);
+              _overrideDirection = true;
             }
             break;
           case "d":
             if (state.direction!.dx == 0) {
-              direction = Offset(1, state.direction!.dy);
+              _direction = Offset(1, state.direction!.dy);
             } else if (state.direction!.dx == -1) {
-              direction = Offset(0, state.direction!.dy);
-              overrideDirection = true;
+              _direction = Offset(0, state.direction!.dy);
+              _overrideDirection = true;
             }
             break;
           case "s":
             if (state.direction!.dy == 0) {
-              direction = Offset(state.direction!.dx, 1);
+              _direction = Offset(state.direction!.dx, 1);
             } else if (state.direction!.dy == -1) {
-              direction = Offset(state.direction!.dx, 0);
-              overrideDirection = true;
+              _direction = Offset(state.direction!.dx, 0);
+              _overrideDirection = true;
             }
             break;
         }
       } else {
         switch (data.logicalKey.keyLabel) {
           case "a":
-            if (overrideDirection) {
-              direction = Offset(1, state.direction!.dy);
-              overrideDirection = false;
+            if (_overrideDirection) {
+              _direction = Offset(1, state.direction!.dy);
+              _overrideDirection = false;
             } else {
-              direction = Offset(0, state.direction!.dy);
+              _direction = Offset(0, state.direction!.dy);
             }
             break;
           case "w":
-            if (overrideDirection) {
-              direction = Offset(state.direction!.dx, 1);
-              overrideDirection = false;
+            if (_overrideDirection) {
+              _direction = Offset(state.direction!.dx, 1);
+              _overrideDirection = false;
             } else {
-              direction = Offset(state.direction!.dx, 0);
+              _direction = Offset(state.direction!.dx, 0);
             }
             break;
           case "d":
-            if (overrideDirection) {
-              direction = Offset(-1, state.direction!.dy);
-              overrideDirection = false;
+            if (_overrideDirection) {
+              _direction = Offset(-1, state.direction!.dy);
+              _overrideDirection = false;
             } else {
-              direction = Offset(0, state.direction!.dy);
+              _direction = Offset(0, state.direction!.dy);
             }
             break;
           case "s":
-            if (overrideDirection) {
-              direction = Offset(state.direction!.dx, -1);
-              overrideDirection = false;
+            if (_overrideDirection) {
+              _direction = Offset(state.direction!.dx, -1);
+              _overrideDirection = false;
             } else {
-              direction = Offset(state.direction!.dx, 0);
+              _direction = Offset(state.direction!.dx, 0);
             }
             break;
         }
       }
     }else{
-      direction = Offset.zero;
+      _direction = Offset.zero;
     }
 
-    if (direction != Offset.zero) oldDirection = direction;
-    state = state.copyWith(direction: direction);
+    if (_direction != Offset.zero) _oldDirection = _direction;
+    state = state.copyWith(direction: _direction);
   }
 
-  bool isShooting = false;
-  Timer? t;
+  bool get isShooting => _isShooting;
+  bool _isShooting = false;
+
+  Timer? _t;
   void shoot(RawKeyEvent data) {
     if (data.character != null) {
-      print('shoot');
-      if (!isShooting) isShooting = !isShooting;
-      if (isShooting && t == null) {
+      if (!_isShooting) _isShooting = !_isShooting;
+      if (_isShooting && _t == null) {
         state = state.copyWith(color: Colors.greenAccent);
-        t = Timer.periodic(Duration(milliseconds: 500), (timer) {
+        _t = Timer.periodic(Duration(milliseconds: 500), (timer) {
           if (isAlive()) {
             bullets.add(Bullet(
-              direction: aimAngle,
+              direction: _aimAngle,
               color: Colors.greenAccent,
               position: Rect.fromLTWH(state.position!.dx, state.position!.dy,
                   playerSize, playerSize)
@@ -232,12 +241,12 @@ class PlayerController extends StateNotifier<Player> {
         });
       }
     } else {
-      if(t!.isActive) {
-        t!.cancel();
-        t = null;
+      if(_t!.isActive) {
+        _t!.cancel();
+        _t = null;
       }
       _colorChange();
-      isShooting = false;
+      _isShooting = false;
     }
   }
 
@@ -246,7 +255,7 @@ class PlayerController extends StateNotifier<Player> {
 
     if(data.character != null && !isActiveLB){
       state = state.copyWith(color: Colors.greenAccent, velocity: 0, direction: Offset.zero);
-      laserBeam = LaserBeam(color: state.color!, direction: aimAngle, origin: state.position! + Offset(playerSize/2, playerSize/2));
+      laserBeam = LaserBeam(color: state.color!, direction: _aimAngle, origin: state.position! + Offset(playerSize/2, playerSize/2));
       isActiveLB = true;
     }else if(data.character == null){
       laserBeam = null;
@@ -286,14 +295,14 @@ class PlayerController extends StateNotifier<Player> {
   }
 
   void _setAim() {
-    aim = read(enemyProvider.notifier).getCenter();
+    _aim = read(enemyProvider.notifier).getCenter();
   }
 
   void _move(x) {
     if (state.direction! == Offset.zero) {
       if (state.velocity! > 0) {
         state = state.copyWith(
-          velocity: isShooting
+          velocity: _isShooting
               ? (state.velocity! - acceleration)
                   .clamp(0, maxVelocityShooting)
                   .toDouble()
@@ -301,15 +310,15 @@ class PlayerController extends StateNotifier<Player> {
                   .clamp(0, maxVelocity)
                   .toDouble(),
           position: (state.position! +
-                  Offset(state.velocity! * oldDirection.dx,
-                      state.velocity! * oldDirection.dy))
+                  Offset(state.velocity! * _oldDirection.dx,
+                      state.velocity! * _oldDirection.dy))
               .clamp(Offset.zero,
                   Offset(x.width - playerSize, x.height - playerSize)),
         );
       }
     } else {
       state = state.copyWith(
-        velocity: isShooting
+        velocity: _isShooting
             ? (state.velocity! + acceleration).clamp(0, maxVelocityShooting).toDouble()
             : (state.velocity! + acceleration).clamp(0, maxVelocity).toDouble(),
         position: (state.position! +
@@ -328,14 +337,30 @@ class PlayerController extends StateNotifier<Player> {
             rotationValue * state.velocity! / 5);
   }
 
-  bool isHurt = false;
-
+  bool get isHurt => _isHurt;
+  bool _isHurt = false;
   void _colorChange() {
     Timer(Duration(milliseconds: 100), () {
       state = state.copyWith(color: Colors.white);
-      if (isHurt) isHurt = !isHurt;
+      if (_isHurt) _isHurt = !_isHurt;
     });
   }
+
+  Explosion? e;
+  void _destroy(Canvas c) {
+    if (e == null)
+      e = Explosion(
+        isSquare: true,
+        origin: getCenter(),
+        color: Colors.greenAccent,
+        sizeParticles: 5,
+        amountParticles: 100,
+        velocityParticles: 40,
+      );
+    e!.renderExplosion(c);
+    if(e!.isFinished) _gameOver = true;
+  }
+
 }
 
 final playerProvider = StateNotifierProvider<PlayerController, Player>(

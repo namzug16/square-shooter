@@ -18,7 +18,7 @@ class _$EnemyTearOff {
 
   _Enemy call(
       {Offset? position = const Offset(600, 300),
-      Offset? direction = const Offset(-1, 0),
+      Offset? direction = const Offset(0, 0),
       double? velocity = 0,
       double? rotation = 0,
       int? health = 100,
@@ -175,7 +175,7 @@ class __$EnemyCopyWithImpl<$Res> extends _$EnemyCopyWithImpl<$Res>
 class _$_Enemy with DiagnosticableTreeMixin implements _Enemy {
   _$_Enemy(
       {this.position = const Offset(600, 300),
-      this.direction = const Offset(-1, 0),
+      this.direction = const Offset(0, 0),
       this.velocity = 0,
       this.rotation = 0,
       this.health = 100,
@@ -184,7 +184,7 @@ class _$_Enemy with DiagnosticableTreeMixin implements _Enemy {
   @JsonKey(defaultValue: const Offset(600, 300))
   @override
   final Offset? position;
-  @JsonKey(defaultValue: const Offset(-1, 0))
+  @JsonKey(defaultValue: const Offset(0, 0))
   @override
   final Offset? direction;
   @JsonKey(defaultValue: 0)

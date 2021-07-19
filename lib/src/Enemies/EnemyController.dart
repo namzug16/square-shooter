@@ -38,14 +38,13 @@ class EnemyController extends StateNotifier<Enemy> {
     final angle = center.angleTo(_aim);
     _aimAngle = angle;
     _setAim();
-    // _shoot();
-    // if (isAlive()) {
-    //   if (read(playerProvider.notifier).isAlive()) {
-    //     if (!isShooting) _shoot();
-    //   }
-    //   _updateRotation();
-    //   _move(x);
-    // }
+    if (isAlive()) {
+      if (read(playerProvider.notifier).isAlive()) {
+        _checkCanShoot();
+      }
+      _updateRotation();
+      _move(x);
+    }
     final rect = Rect.fromLTWH(
         state.position!.dx, state.position!.dy, enemySize, enemySize);
     // * ===========================> Bullets
@@ -73,17 +72,18 @@ class EnemyController extends StateNotifier<Enemy> {
     }
 
     // * ===========================> PlayerBulletsDetection
-    if (read(playerProvider.notifier).bullets.length > 0) {
-      final enemyBullets = read(playerProvider.notifier).bullets;
-      for (var b in enemyBullets) {
-        if (b.canDamage && b.getRect().collides(rect)) {
-          state = state.copyWith(
-              color: Colors.redAccent, health: state.health! - b.damage);
-          _colorChange();
-          b.destroy();
-        }
-      }
-    }
+    // if (read(playerProvider.notifier).bullets.length > 0) {
+    //   final playerBullets = read(playerProvider.notifier).bullets;
+    //   for (var b in playerBullets) {
+    //     if (b.canDamage && b.getRect().collides(rect)) {
+    //       state = state.copyWith(
+    //           color: Colors.redAccent, health: state.health! - b.damage);
+    //       _isHurt = true;
+    //       _colorChange();
+    //       b.destroy();
+    //     }
+    //   }
+    // }
 
     // * ==========================> LaserBeam
     // _activateLaserBeam();
@@ -91,8 +91,12 @@ class EnemyController extends StateNotifier<Enemy> {
       laserBeam!.renderLaserBeam(c);
     }
 
+    // * =========================> LaserBeam Player
+
+    _verifyLaserBeamPlayer();
+
     // * ==========================> AimLine
-    if (isAlive()) {
+    if (isAlive() && _isShooting) {
       c.save();
       final aimPaint = Paint()
         ..color = Colors.blueAccent
@@ -120,8 +124,8 @@ class EnemyController extends StateNotifier<Enemy> {
     }
   }
 
-  Offset oldDirection = Offset.zero;
-  Offset direction = Offset.zero;
+  Offset _oldDirection = Offset.zero;
+  Offset _direction = Offset.zero;
 
   // * ================================= >
 
@@ -153,19 +157,45 @@ class EnemyController extends StateNotifier<Enemy> {
     //
   }
 
+  void _verifyLaserBeamPlayer(){
+    if(read(playerProvider.notifier).isActiveLB && read(playerProvider.notifier).laserBeam!.isFinished){
+      final rect = Rect.fromLTWH(state.position!.dx, state.position!.dy, enemySize, enemySize);
+      final line = read(playerProvider.notifier).laserBeam!.line;
+      if(rect.intersectsLine(line[0], line[1])){
+        state = state.copyWith(health: 0);
+      }
+    }
+  }
+
   void _setAim() {
     _aim = read(playerProvider.notifier).getCenter();
     // aim = Offset(900, 900);
   }
 
-  bool isShooting = false;
-  Timer? t;
+  bool _isShooting = false;
+  bool _canShoot = false;
+  Timer? _t;
+
+  void _checkCanShoot(){
+    if(read(playerProvider.notifier).isShooting){
+      _canShoot = true;
+      _shoot();
+    }else{
+      _stopShooting();
+    }
+  }
+
+  void _stopShooting(){
+    if(_canShoot) _canShoot = !_canShoot;
+    if( _t != null && _t!.isActive) _t!.cancel(); _t = null;
+    if(_isShooting) _isShooting = !_isShooting;
+  }
 
   void _shoot() {
-    if (!isShooting) isShooting = !isShooting;
-    if (isShooting && t == null) {
+    if ( _canShoot && !_isShooting) _isShooting = !_isShooting;
+    if ( _canShoot && _isShooting && _t == null) {
       state = state.copyWith(color: Colors.blueAccent);
-      t = Timer.periodic(Duration(milliseconds: 3000), (timer) {
+      _t = Timer.periodic(Duration(milliseconds: 500), (timer) {
         _colorChange();
         bullets.add(Bullet(
           damage: 15,
@@ -180,19 +210,6 @@ class EnemyController extends StateNotifier<Enemy> {
     }
   }
 
-  void _getDirection() {
-    final player = read(playerProvider.notifier);
-    final double? velocity = player.getVelocity();
-    // if(velocity! > 5){
-    //   state = state.copyWith(direction: Offset(_getRandomDir(state.direction!.dx), _getRandomDir(state.direction!.dy)));
-    // }else{
-    //   state = state.copyWith(direction: Offset.zero) ;
-    // }
-    state = state.copyWith(
-        direction: Offset(_getRandomDir(state.direction!.dx),
-            _getRandomDir(state.direction!.dy)));
-  }
-
   void _move(x) {
     if (_needsToMove(x)) {
       if (read(playerProvider.notifier).isAlive()) {
@@ -201,14 +218,17 @@ class EnemyController extends StateNotifier<Enemy> {
         state = state.copyWith(direction: Offset.zero);
       }
     }
+
+    // * ==========> Acceleration and Deceleration
+
     if (state.direction! == Offset.zero) {
       if (state.velocity! > 0) {
         state = state.copyWith(
           velocity:
               (state.velocity! - acceleration).clamp(0, maxVelocity).toDouble(),
           position: (state.position! +
-                  Offset(state.velocity! * oldDirection.dx,
-                      state.velocity! * oldDirection.dy))
+                  Offset(state.velocity! * _oldDirection.dx,
+                      state.velocity! * _oldDirection.dy))
               .clamp(Offset.zero,
                   Offset(x.width - enemySize, x.height - enemySize)),
         );
@@ -226,17 +246,22 @@ class EnemyController extends StateNotifier<Enemy> {
     }
   }
 
+  void _getDirection() {
+    state = state.copyWith(
+        direction: Offset(_getRandomDir(state.direction!.dx),
+            _getRandomDir(state.direction!.dy)));
+  }
+
   bool _needsToMove(x) {
     final center = _getCenter();
-    final double padding = 50.0;
-    if (center.dx < padding && state.direction!.dx == -1.0) return true;
-    if (center.dx + padding > x.width && state.direction!.dx == 1) return true;
-    if (center.dy < padding && state.direction!.dy == -1) return true;
-    if (center.dy + padding > x.height && state.direction!.dy == 1) return true;
-    if (state.direction!.dy == 0 && state.direction!.dx == 0) return true;
-    if (!read(playerProvider.notifier).isAlive() &&
-        state.direction != Offset.zero) return true;
+    final double padding = 100.0;
+
     return false;
+  }
+
+  double _getRandomDir(double dir) {
+    List<double> values = [-1, 0, 1];
+    return values[Random().nextInt(values.length)];
   }
 
   Offset _getCenter() {
@@ -250,22 +275,20 @@ class EnemyController extends StateNotifier<Enemy> {
             rotationValue * state.velocity! / 5);
   }
 
+  bool get isHurt => _isHurt;
+  bool _isHurt = false;
+
   void _colorChange() {
-    Timer(Duration(milliseconds: 64), () {
+    Timer(Duration(milliseconds: 100), () {
       state = state.copyWith(color: Colors.black);
+      if (_isHurt) _isHurt = !_isHurt;
     });
   }
 
-  double _getRandomDir(double dir) {
-    List<double> values = [-1, 0, 1];
-    // values.remove(dir);
-    return values[Random().nextInt(values.length)];
-  }
-
-  Explosion? e;
+  Explosion? _e;
   void _destroy(Canvas c) {
-    if (e == null)
-      e = Explosion(
+    if (_e == null)
+      _e = Explosion(
         isSquare: true,
         origin: _getCenter(),
         color: Colors.blueAccent,
@@ -273,8 +296,8 @@ class EnemyController extends StateNotifier<Enemy> {
         amountParticles: 100,
         velocityParticles: 40,
       );
-    e!.renderExplosion(c);
-    if(e!.isFinished) _gameOver = true;
+    _e!.renderExplosion(c);
+    if(_e!.isFinished) _gameOver = true;
   }
 }
 
