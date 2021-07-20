@@ -3,6 +3,12 @@ import 'dart:ui';
 
 extension OffsetExtension on Offset{
 
+  double distanceTo(Offset other){
+    final x = (dx - other.dx).abs();
+    final y = (dy - other.dy).abs();
+    return sqrt(pow(x, 2) + pow(y, 2));
+  }
+
   Offset? lineIntersection(Offset l1p2, Offset l2p1, Offset l2p2){
    final numerator = (dx - l1p2.dx)*(l2p1.dy - l2p2.dy) - (dy - l1p2.dy)*(l2p1.dx - l2p2.dx);
 

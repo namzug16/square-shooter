@@ -31,7 +31,7 @@ class LaserBeam {
   List<Offset> get line => _getLine();
 
   void renderLaserBeam(Canvas c) {
-    if(charge == null) charge = Charge(radius: radius, origin: origin, color: color, strokeWidth: 2*pi, rotation: direction);
+    if(charge == null) charge = Charge(factor: factor, radius: radius, origin: origin, color: color, strokeWidth: 2*pi, rotation: direction);
     if(e == null) e = Explosion(isSquare: false, origin: origin, color: Colors.redAccent, amountParticles: 50, sizeParticles: 5);
     if(_weight < maxWeight) _getWeight();
 

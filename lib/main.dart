@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:square_shooter/src/Widgets/Joystick.dart';
-
 import 'src/Game.dart';
 
 void main() {

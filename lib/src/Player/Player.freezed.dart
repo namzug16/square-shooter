@@ -17,12 +17,14 @@ class _$PlayerTearOff {
   const _$PlayerTearOff();
 
   _Player call(
-      {Offset? position = const Offset(300, 300),
-      Offset? direction = Offset.zero,
-      double? velocity = 0,
-      double? rotation = 0,
-      int? health = 100,
-      Color? color = Colors.white}) {
+      {Offset position = const Offset(300, 300),
+      Offset direction = Offset.zero,
+      double velocity = 0,
+      double rotation = 0,
+      int health = 100,
+      Color color = Colors.white,
+      Color initialColor = Colors.white,
+      Color attackColor = Colors.greenAccent}) {
     return _Player(
       position: position,
       direction: direction,
@@ -30,6 +32,8 @@ class _$PlayerTearOff {
       rotation: rotation,
       health: health,
       color: color,
+      initialColor: initialColor,
+      attackColor: attackColor,
     );
   }
 }
@@ -39,12 +43,14 @@ const $Player = _$PlayerTearOff();
 
 /// @nodoc
 mixin _$Player {
-  Offset? get position => throw _privateConstructorUsedError;
-  Offset? get direction => throw _privateConstructorUsedError;
-  double? get velocity => throw _privateConstructorUsedError;
-  double? get rotation => throw _privateConstructorUsedError;
-  int? get health => throw _privateConstructorUsedError;
-  Color? get color => throw _privateConstructorUsedError;
+  Offset get position => throw _privateConstructorUsedError;
+  Offset get direction => throw _privateConstructorUsedError;
+  double get velocity => throw _privateConstructorUsedError;
+  double get rotation => throw _privateConstructorUsedError;
+  int get health => throw _privateConstructorUsedError;
+  Color get color => throw _privateConstructorUsedError;
+  Color get initialColor => throw _privateConstructorUsedError;
+  Color get attackColor => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $PlayerCopyWith<Player> get copyWith => throw _privateConstructorUsedError;
@@ -55,12 +61,14 @@ abstract class $PlayerCopyWith<$Res> {
   factory $PlayerCopyWith(Player value, $Res Function(Player) then) =
       _$PlayerCopyWithImpl<$Res>;
   $Res call(
-      {Offset? position,
-      Offset? direction,
-      double? velocity,
-      double? rotation,
-      int? health,
-      Color? color});
+      {Offset position,
+      Offset direction,
+      double velocity,
+      double rotation,
+      int health,
+      Color color,
+      Color initialColor,
+      Color attackColor});
 }
 
 /// @nodoc
@@ -79,32 +87,42 @@ class _$PlayerCopyWithImpl<$Res> implements $PlayerCopyWith<$Res> {
     Object? rotation = freezed,
     Object? health = freezed,
     Object? color = freezed,
+    Object? initialColor = freezed,
+    Object? attackColor = freezed,
   }) {
     return _then(_value.copyWith(
       position: position == freezed
           ? _value.position
           : position // ignore: cast_nullable_to_non_nullable
-              as Offset?,
+              as Offset,
       direction: direction == freezed
           ? _value.direction
           : direction // ignore: cast_nullable_to_non_nullable
-              as Offset?,
+              as Offset,
       velocity: velocity == freezed
           ? _value.velocity
           : velocity // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as double,
       rotation: rotation == freezed
           ? _value.rotation
           : rotation // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as double,
       health: health == freezed
           ? _value.health
           : health // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as int,
       color: color == freezed
           ? _value.color
           : color // ignore: cast_nullable_to_non_nullable
-              as Color?,
+              as Color,
+      initialColor: initialColor == freezed
+          ? _value.initialColor
+          : initialColor // ignore: cast_nullable_to_non_nullable
+              as Color,
+      attackColor: attackColor == freezed
+          ? _value.attackColor
+          : attackColor // ignore: cast_nullable_to_non_nullable
+              as Color,
     ));
   }
 }
@@ -115,12 +133,14 @@ abstract class _$PlayerCopyWith<$Res> implements $PlayerCopyWith<$Res> {
       __$PlayerCopyWithImpl<$Res>;
   @override
   $Res call(
-      {Offset? position,
-      Offset? direction,
-      double? velocity,
-      double? rotation,
-      int? health,
-      Color? color});
+      {Offset position,
+      Offset direction,
+      double velocity,
+      double rotation,
+      int health,
+      Color color,
+      Color initialColor,
+      Color attackColor});
 }
 
 /// @nodoc
@@ -140,32 +160,42 @@ class __$PlayerCopyWithImpl<$Res> extends _$PlayerCopyWithImpl<$Res>
     Object? rotation = freezed,
     Object? health = freezed,
     Object? color = freezed,
+    Object? initialColor = freezed,
+    Object? attackColor = freezed,
   }) {
     return _then(_Player(
       position: position == freezed
           ? _value.position
           : position // ignore: cast_nullable_to_non_nullable
-              as Offset?,
+              as Offset,
       direction: direction == freezed
           ? _value.direction
           : direction // ignore: cast_nullable_to_non_nullable
-              as Offset?,
+              as Offset,
       velocity: velocity == freezed
           ? _value.velocity
           : velocity // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as double,
       rotation: rotation == freezed
           ? _value.rotation
           : rotation // ignore: cast_nullable_to_non_nullable
-              as double?,
+              as double,
       health: health == freezed
           ? _value.health
           : health // ignore: cast_nullable_to_non_nullable
-              as int?,
+              as int,
       color: color == freezed
           ? _value.color
           : color // ignore: cast_nullable_to_non_nullable
-              as Color?,
+              as Color,
+      initialColor: initialColor == freezed
+          ? _value.initialColor
+          : initialColor // ignore: cast_nullable_to_non_nullable
+              as Color,
+      attackColor: attackColor == freezed
+          ? _value.attackColor
+          : attackColor // ignore: cast_nullable_to_non_nullable
+              as Color,
     ));
   }
 }
@@ -179,30 +209,38 @@ class _$_Player with DiagnosticableTreeMixin implements _Player {
       this.velocity = 0,
       this.rotation = 0,
       this.health = 100,
-      this.color = Colors.white});
+      this.color = Colors.white,
+      this.initialColor = Colors.white,
+      this.attackColor = Colors.greenAccent});
 
   @JsonKey(defaultValue: const Offset(300, 300))
   @override
-  final Offset? position;
+  final Offset position;
   @JsonKey(defaultValue: Offset.zero)
   @override
-  final Offset? direction;
+  final Offset direction;
   @JsonKey(defaultValue: 0)
   @override
-  final double? velocity;
+  final double velocity;
   @JsonKey(defaultValue: 0)
   @override
-  final double? rotation;
+  final double rotation;
   @JsonKey(defaultValue: 100)
   @override
-  final int? health;
+  final int health;
   @JsonKey(defaultValue: Colors.white)
   @override
-  final Color? color;
+  final Color color;
+  @JsonKey(defaultValue: Colors.white)
+  @override
+  final Color initialColor;
+  @JsonKey(defaultValue: Colors.greenAccent)
+  @override
+  final Color attackColor;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'Player(position: $position, direction: $direction, velocity: $velocity, rotation: $rotation, health: $health, color: $color)';
+    return 'Player(position: $position, direction: $direction, velocity: $velocity, rotation: $rotation, health: $health, color: $color, initialColor: $initialColor, attackColor: $attackColor)';
   }
 
   @override
@@ -215,7 +253,9 @@ class _$_Player with DiagnosticableTreeMixin implements _Player {
       ..add(DiagnosticsProperty('velocity', velocity))
       ..add(DiagnosticsProperty('rotation', rotation))
       ..add(DiagnosticsProperty('health', health))
-      ..add(DiagnosticsProperty('color', color));
+      ..add(DiagnosticsProperty('color', color))
+      ..add(DiagnosticsProperty('initialColor', initialColor))
+      ..add(DiagnosticsProperty('attackColor', attackColor));
   }
 
   @override
@@ -237,7 +277,13 @@ class _$_Player with DiagnosticableTreeMixin implements _Player {
             (identical(other.health, health) ||
                 const DeepCollectionEquality().equals(other.health, health)) &&
             (identical(other.color, color) ||
-                const DeepCollectionEquality().equals(other.color, color)));
+                const DeepCollectionEquality().equals(other.color, color)) &&
+            (identical(other.initialColor, initialColor) ||
+                const DeepCollectionEquality()
+                    .equals(other.initialColor, initialColor)) &&
+            (identical(other.attackColor, attackColor) ||
+                const DeepCollectionEquality()
+                    .equals(other.attackColor, attackColor)));
   }
 
   @override
@@ -248,7 +294,9 @@ class _$_Player with DiagnosticableTreeMixin implements _Player {
       const DeepCollectionEquality().hash(velocity) ^
       const DeepCollectionEquality().hash(rotation) ^
       const DeepCollectionEquality().hash(health) ^
-      const DeepCollectionEquality().hash(color);
+      const DeepCollectionEquality().hash(color) ^
+      const DeepCollectionEquality().hash(initialColor) ^
+      const DeepCollectionEquality().hash(attackColor);
 
   @JsonKey(ignore: true)
   @override
@@ -258,25 +306,31 @@ class _$_Player with DiagnosticableTreeMixin implements _Player {
 
 abstract class _Player implements Player {
   factory _Player(
-      {Offset? position,
-      Offset? direction,
-      double? velocity,
-      double? rotation,
-      int? health,
-      Color? color}) = _$_Player;
+      {Offset position,
+      Offset direction,
+      double velocity,
+      double rotation,
+      int health,
+      Color color,
+      Color initialColor,
+      Color attackColor}) = _$_Player;
 
   @override
-  Offset? get position => throw _privateConstructorUsedError;
+  Offset get position => throw _privateConstructorUsedError;
   @override
-  Offset? get direction => throw _privateConstructorUsedError;
+  Offset get direction => throw _privateConstructorUsedError;
   @override
-  double? get velocity => throw _privateConstructorUsedError;
+  double get velocity => throw _privateConstructorUsedError;
   @override
-  double? get rotation => throw _privateConstructorUsedError;
+  double get rotation => throw _privateConstructorUsedError;
   @override
-  int? get health => throw _privateConstructorUsedError;
+  int get health => throw _privateConstructorUsedError;
   @override
-  Color? get color => throw _privateConstructorUsedError;
+  Color get color => throw _privateConstructorUsedError;
+  @override
+  Color get initialColor => throw _privateConstructorUsedError;
+  @override
+  Color get attackColor => throw _privateConstructorUsedError;
   @override
   @JsonKey(ignore: true)
   _$PlayerCopyWith<_Player> get copyWith => throw _privateConstructorUsedError;
