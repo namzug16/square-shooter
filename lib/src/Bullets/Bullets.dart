@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -18,11 +17,13 @@ class Bullet {
   final Color color;
   final Offset position;
 
-  static const double bulletSize = 15.0; // 5
-  static const double velocity = 25.0; // 50
+  static const double bulletSize = 10.0; // 10
+  static const double velocity = 30.0; // 30
 
   Offset _bulletPosition = Offset.zero;
   bool _shouldDestroy = false;
+
+  Rect get rect => _getRect();
 
   bool get canDamage => !_shouldDestroy;
   bool get shouldBeEliminated => _shouldBeEliminated;
@@ -37,13 +38,15 @@ class Bullet {
     if (!_shouldDestroy) {
       c.save();
       c.drawCircle(pos, bulletSize, Paint()..color = color);
+      // hitbox of bullet:
+      // c.drawRect(rect, Paint()..color=Colors.pinkAccent);
       c.restore();
     }else{
       _explode(c);
     }
   }
 
-  Rect getRect() {
+  Rect _getRect() {
     return Rect.fromCircle(center: _getPosition(), radius: bulletSize);
   }
 
@@ -67,6 +70,6 @@ class Bullet {
   Offset _getPosition() {
     return _bulletPosition.rotateWithPivot(
         Offset(position.dx - bulletSize / 2, position.dy - bulletSize / 2),
-        pi / 2 - direction);
+        direction);
   }
 }

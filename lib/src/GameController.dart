@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -13,7 +14,6 @@ class GameController extends StateNotifier<bool> {
   late final PlayerControllerFSM _player;
   late final EnemyControllerFSM _enemy;
 
-
   void init() {
     _getEnemy();
     _getPlayer();
@@ -27,29 +27,25 @@ class GameController extends StateNotifier<bool> {
   int _deathShakes = 0;
 
   void renderGame(Canvas c, x) {
+    // * ================================> Shakes
+    if (_player.isHurt || _enemy.isHurt) {
+      c.translate(_hurtValues[Random().nextInt(_hurtValues.length)],
+          _hurtValues[Random().nextInt(_hurtValues.length)]);
+    }
+
+    if((!_player.isAlive || !_enemy.isAlive) && _deathShakes < 61){
+      c.translate(_deathValues[Random().nextInt(_deathValues.length)],
+          _deathValues[Random().nextInt(_deathValues.length)]);
+      _deathShakes++;
+    }
 
     _player.renderPlayer(c, x);
+    // _player.renderAngleFinding(c, x);
     _enemy.renderEnemy(c, x);
-    // // * =================> Shakes
-    //
-    // if (_playerController.isHurt || _enemyController.isHurt) {
-    //   c.translate(_hurtValues[Random().nextInt(_hurtValues.length)],
-    //       _hurtValues[Random().nextInt(_hurtValues.length)]);
-    // }
-    //
-    // if ( (_playerController.laserBeam != null && _playerController.laserBeam!.isFinished)
-    // || (_enemyController.laserBeam != null && _enemyController.laserBeam!.isFinished)){
-    //   c.translate(_hurtValues[Random().nextInt(_hurtValues.length)],
-    //       _hurtValues[Random().nextInt(_hurtValues.length)]);
-    // }
-    //
-    // if ((!_playerController.isAlive() || !_enemyController.isAlive()) &&
-    //     _deathShakes < 20) {
-    //   c.translate(_deathValues[Random().nextInt(_deathValues.length)],
-    //       _deathValues[Random().nextInt(_deathValues.length)]);
-    //   _deathShakes++;
-    // }
-
+    // _enemy.renderStates(c);
+    // _enemy.renderTrajectory(c);
+    // _enemy.renderDogeAngles(c);
+    // _enemy.renderSafeArea(c);
   }
 
   // * ===================================> Private

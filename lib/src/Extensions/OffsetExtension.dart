@@ -4,8 +4,8 @@ import 'dart:ui';
 extension OffsetExtension on Offset{
 
   double distanceTo(Offset other){
-    final x = (dx - other.dx).abs();
-    final y = (dy - other.dy).abs();
+    final x = (dx - other.dx);
+    final y = (dy - other.dy);
     return sqrt(pow(x, 2) + pow(y, 2));
   }
 
@@ -53,18 +53,20 @@ extension OffsetExtension on Offset{
     );
   }
 
-  double angleTo(Offset point){
-    final x = dx - point.dx;
-    final y = dy - point.dy;
-    final double a = (-atan2(y, x) + 3*pi/2);
-    return a;
-  }
-
-  double angleToDeg(Offset point){
-    final x = dx - point.dx;
-    final y = dy - point.dy;
-    final double a = (-atan2(y, x) + 3*pi/2);
-    return a*180/pi;
+  double angleTo(Offset other){
+    final p1 = Offset(dx + 100, dy);
+    final angle1 = atan2(p1.dy - dy, p1.dx - dx);
+    final angle2 = atan2(other.dy - dy, other.dx - dx);
+    final angle = angle1 - angle2;
+    if(angle < 0){
+      return -angle;
+    }else{
+      return -angle+2*pi;
+    }
+    // final x = dx - other.dx;
+    // final y = dy - other.dy;
+    // final double a = (-atan2(y, x) + 3*pi/2);
+    // return a;
   }
 
 }

@@ -24,6 +24,9 @@ class PlayerControllerFSM extends StateNotifier<Player> {
   bool get gameOver => _gameOver;
   bool _gameOver = false;
 
+  bool get isHurt => _isHurt;
+  bool _isHurt = false;
+
   MovementStates get mS => _mS;
   MovementStates _mS = MovementStates.Moving;
 
@@ -49,8 +52,8 @@ class PlayerControllerFSM extends StateNotifier<Player> {
 
   // ! =====================================> RenderObjects
   void renderPlayer(Canvas c, x) {
+    _detectLaserBeamEnemy();
     _stateLogic(c, x);
-
     Rect rect = Rect.fromLTWH(
         state.position.dx, state.position.dy, playerSize, playerSize);
 
@@ -71,28 +74,29 @@ class PlayerControllerFSM extends StateNotifier<Player> {
         ..color = state.attackColor
         ..strokeWidth = 3
         ..strokeCap = StrokeCap.round;
+      final a = pi/2 - _aimAngle;
       c.drawLine(
           center +
               Offset(
-                  aimSizeStart * sin(_aimAngle), aimSizeStart * cos(_aimAngle)),
-          center + Offset(aimSize * sin(_aimAngle), aimSize * cos(_aimAngle)),
+                  aimSizeStart * sin(a), aimSizeStart * cos(a)),
+          center + Offset(aimSize * sin(a), aimSize * cos(a)),
           aimPaint);
       c.drawLine(
         center +
-            Offset(aimSizeStart * sin(_aimAngle + pi / 7),
-                aimSizeStart * cos(_aimAngle + pi / 7)),
+            Offset(aimSizeStart * sin(a + pi / 7),
+                aimSizeStart * cos(a + pi / 7)),
         center +
             Offset(
-                aimSizeStart * sin(_aimAngle), aimSizeStart * cos(_aimAngle)),
+                aimSizeStart * sin(a), aimSizeStart * cos(a)),
         aimPaint,
       );
       c.drawLine(
         center +
-            Offset(aimSizeStart * sin(_aimAngle - pi / 7),
-                aimSizeStart * cos(_aimAngle - pi / 7)),
+            Offset(aimSizeStart * sin(a - pi / 7),
+                aimSizeStart * cos(a - pi / 7)),
         center +
             Offset(
-                aimSizeStart * sin(_aimAngle), aimSizeStart * cos(_aimAngle)),
+                aimSizeStart * sin(a), aimSizeStart * cos(a)),
         aimPaint,
       );
       c.restore();
@@ -103,7 +107,7 @@ class PlayerControllerFSM extends StateNotifier<Player> {
       for (var b in _bullets) {
         b.renderBullet(c);
         if (b.canDamage &&
-            b.getRect().outsideRegion(Rect.fromLTWH(0, 0, x.width, x.height))) {
+            b.rect.outsideRegion(Rect.fromLTWH(0, 0, x.width, x.height))) {
           _bullets.remove(b);
         }
         if (b.shouldBeEliminated) _bullets.remove(b);
@@ -124,21 +128,20 @@ class PlayerControllerFSM extends StateNotifier<Player> {
         for (var pb in bullets) {
           if (b.canDamage &&
               pb.canDamage &&
-              pb.getRect().collides(b.getRect())) {
+              pb.rect.collides(b.rect)) {
             pb.destroy();
             b.destroy();
           }
         }
 
         // * ======> Damage
-        if (b.canDamage && b.getRect().collides(rect)) {
+        if (b.canDamage && b.rect.collides(rect)) {
           _mS = MovementStates.Stunned;
           _angleStun = b.direction;
           b.destroy();
         }
       }
     }
-
   }
 
   // ! =========================================================> StateMachine
@@ -361,14 +364,14 @@ class PlayerControllerFSM extends StateNotifier<Player> {
 
   void _setAim() {
     _aim = _enemy.center;
-    _aimAngle = state.position.angleTo(_aim);
+    _aimAngle = center.angleTo(_aim);
   }
 
   Timer? _t;
 
   void _shoot() {
     if (_t == null) {
-      _t = Timer.periodic(Duration(milliseconds: 500), (timer) {
+      _t = Timer.periodic(Duration(milliseconds: 300), (timer) {
         _bullets.add(Bullet(
           direction: _aimAngle,
           color: state.attackColor,
@@ -392,7 +395,7 @@ class PlayerControllerFSM extends StateNotifier<Player> {
       _laserBeam = LaserBeam(
           factor: 0.2,
           color: state.color,
-          direction: _aimAngle,
+          direction: pi/2 - _aimAngle,
           origin: state.position + Offset(playerSize / 2, playerSize / 2));
     }
   }
@@ -416,8 +419,10 @@ class PlayerControllerFSM extends StateNotifier<Player> {
   }
 
   Rect get rect => _getRect();
-  Rect _getRect(){
-    return Rect.fromLTWH(state.position.dx, state.position.dy, playerSize, playerSize);
+
+  Rect _getRect() {
+    return Rect.fromLTWH(
+        state.position.dx, state.position.dy, playerSize, playerSize);
   }
 
   // * Debugging
@@ -428,16 +433,30 @@ class PlayerControllerFSM extends StateNotifier<Player> {
     c.drawRect(rect, Paint()..color = Colors.lightBlueAccent.withOpacity(0.3));
   }
 
+  void renderAngleFinding(Canvas c, x) {
+    final centerPoint = Offset(x.width / 2, x.height / 2);
+    c.save();
+    c.drawLine(center, centerPoint, Paint()..color = Colors.pinkAccent);
+    c.restore();
+    c.save();
+    c.translate(centerPoint.dx, centerPoint.dy);
+    c.rotate(centerPoint.angleTo(center));
+    c.drawArc(Rect.fromCircle(center: Offset.zero, radius: 20), -pi/2, pi / 2,
+        false, Paint()..color = Colors.pink..style=PaintingStyle.stroke..strokeWidth=5);
+    c.drawArc(Rect.fromCircle(center: Offset.zero, radius: 20), 0, pi / 2,
+        false, Paint()..color = Colors.pink..style=PaintingStyle.stroke..strokeWidth=5);
+    c.restore();
+  }
+
   // * Stun
 
   int _stunFramesCount = 0;
   double _angleStun = 0;
-  // double _stunDistance = 10;
+
+  // double _stunDistance = 5;
   double _stunDistance = 0;
 
   void _stun(Canvas c) {
-    // TODO: fix amount of damage
-    // state = state.copyWith(health: state.health - 5);
     c.save();
     c.drawCircle(
         state.position + Offset(playerSize / 2, playerSize / 2),
@@ -454,8 +473,10 @@ class PlayerControllerFSM extends StateNotifier<Player> {
           position: state.position +
               Offset(_stunDistance * sin(_angleStun),
                   _stunDistance * cos(_angleStun)));
+      _isHurt = true;
     } else {
       state = state.copyWith(velocity: state.velocity.clamp(0, 2));
+      _isHurt = false;
     }
     if (_stunFramesCount == 60) {
       _stunFramesCount = 0;
@@ -480,6 +501,17 @@ class PlayerControllerFSM extends StateNotifier<Player> {
     }
     _e!.renderExplosion(c);
     if (_e!.isFinished) _gameOver = true;
+  }
+
+  void _detectLaserBeamEnemy() {
+    if (_enemy.aS == AttackStates.LaserBeam && _enemy.laserBeam!.isFinished) {
+      final rect = Rect.fromLTWH(
+          state.position.dx, state.position.dy, playerSize, playerSize);
+      final line = _enemy.laserBeam!.line;
+      if (rect.intersectsLine(line[0], line[1])) {
+        _lS = LiveStates.Dead;
+      }
+    }
   }
 }
 

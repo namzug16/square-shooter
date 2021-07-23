@@ -5,6 +5,7 @@ enum LiveStates {
 
 enum MovementStates {
   Moving,
+  Escaping,
   Stunned,
 }
 
