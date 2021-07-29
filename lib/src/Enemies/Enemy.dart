@@ -12,7 +12,6 @@ class Enemy with _$Enemy {
     @Default(Offset(100, 100)) Offset position,
     @Default(0) double velocity,
     @Default(0) double rotation,
-    @Default(100) int health,
     @Default(Colors.white) Color color,
     @Default(Colors.white) Color initialColor,
     @Default(Colors.blueAccent) Color attackColor,

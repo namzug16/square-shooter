@@ -6,13 +6,11 @@ import '../Extensions/OffsetExtension.dart';
 
 class Bullet {
   Bullet({
-    this.damage = 5,
     required this.direction,
     required this.color,
     required this.position,
   });
 
-  final int damage;
   final double direction;
   final Color color;
   final Offset position;

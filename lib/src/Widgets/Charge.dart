@@ -45,7 +45,8 @@ class Charge {
   }
 
   void restart(){
-    _actualAngle = startAngle;
+    _isFinished = false;
+    _actualAngle = null;
   }
 
   void _update(){

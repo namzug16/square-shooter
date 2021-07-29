@@ -21,7 +21,6 @@ class _$PlayerTearOff {
       Offset direction = Offset.zero,
       double velocity = 0,
       double rotation = 0,
-      int health = 100,
       Color color = Colors.white,
       Color initialColor = Colors.white,
       Color attackColor = Colors.greenAccent}) {
@@ -30,7 +29,6 @@ class _$PlayerTearOff {
       direction: direction,
       velocity: velocity,
       rotation: rotation,
-      health: health,
       color: color,
       initialColor: initialColor,
       attackColor: attackColor,
@@ -47,7 +45,6 @@ mixin _$Player {
   Offset get direction => throw _privateConstructorUsedError;
   double get velocity => throw _privateConstructorUsedError;
   double get rotation => throw _privateConstructorUsedError;
-  int get health => throw _privateConstructorUsedError;
   Color get color => throw _privateConstructorUsedError;
   Color get initialColor => throw _privateConstructorUsedError;
   Color get attackColor => throw _privateConstructorUsedError;
@@ -65,7 +62,6 @@ abstract class $PlayerCopyWith<$Res> {
       Offset direction,
       double velocity,
       double rotation,
-      int health,
       Color color,
       Color initialColor,
       Color attackColor});
@@ -85,7 +81,6 @@ class _$PlayerCopyWithImpl<$Res> implements $PlayerCopyWith<$Res> {
     Object? direction = freezed,
     Object? velocity = freezed,
     Object? rotation = freezed,
-    Object? health = freezed,
     Object? color = freezed,
     Object? initialColor = freezed,
     Object? attackColor = freezed,
@@ -107,10 +102,6 @@ class _$PlayerCopyWithImpl<$Res> implements $PlayerCopyWith<$Res> {
           ? _value.rotation
           : rotation // ignore: cast_nullable_to_non_nullable
               as double,
-      health: health == freezed
-          ? _value.health
-          : health // ignore: cast_nullable_to_non_nullable
-              as int,
       color: color == freezed
           ? _value.color
           : color // ignore: cast_nullable_to_non_nullable
@@ -137,7 +128,6 @@ abstract class _$PlayerCopyWith<$Res> implements $PlayerCopyWith<$Res> {
       Offset direction,
       double velocity,
       double rotation,
-      int health,
       Color color,
       Color initialColor,
       Color attackColor});
@@ -158,7 +148,6 @@ class __$PlayerCopyWithImpl<$Res> extends _$PlayerCopyWithImpl<$Res>
     Object? direction = freezed,
     Object? velocity = freezed,
     Object? rotation = freezed,
-    Object? health = freezed,
     Object? color = freezed,
     Object? initialColor = freezed,
     Object? attackColor = freezed,
@@ -180,10 +169,6 @@ class __$PlayerCopyWithImpl<$Res> extends _$PlayerCopyWithImpl<$Res>
           ? _value.rotation
           : rotation // ignore: cast_nullable_to_non_nullable
               as double,
-      health: health == freezed
-          ? _value.health
-          : health // ignore: cast_nullable_to_non_nullable
-              as int,
       color: color == freezed
           ? _value.color
           : color // ignore: cast_nullable_to_non_nullable
@@ -208,7 +193,6 @@ class _$_Player with DiagnosticableTreeMixin implements _Player {
       this.direction = Offset.zero,
       this.velocity = 0,
       this.rotation = 0,
-      this.health = 100,
       this.color = Colors.white,
       this.initialColor = Colors.white,
       this.attackColor = Colors.greenAccent});
@@ -225,9 +209,6 @@ class _$_Player with DiagnosticableTreeMixin implements _Player {
   @JsonKey(defaultValue: 0)
   @override
   final double rotation;
-  @JsonKey(defaultValue: 100)
-  @override
-  final int health;
   @JsonKey(defaultValue: Colors.white)
   @override
   final Color color;
@@ -240,7 +221,7 @@ class _$_Player with DiagnosticableTreeMixin implements _Player {
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'Player(position: $position, direction: $direction, velocity: $velocity, rotation: $rotation, health: $health, color: $color, initialColor: $initialColor, attackColor: $attackColor)';
+    return 'Player(position: $position, direction: $direction, velocity: $velocity, rotation: $rotation, color: $color, initialColor: $initialColor, attackColor: $attackColor)';
   }
 
   @override
@@ -252,7 +233,6 @@ class _$_Player with DiagnosticableTreeMixin implements _Player {
       ..add(DiagnosticsProperty('direction', direction))
       ..add(DiagnosticsProperty('velocity', velocity))
       ..add(DiagnosticsProperty('rotation', rotation))
-      ..add(DiagnosticsProperty('health', health))
       ..add(DiagnosticsProperty('color', color))
       ..add(DiagnosticsProperty('initialColor', initialColor))
       ..add(DiagnosticsProperty('attackColor', attackColor));
@@ -274,8 +254,6 @@ class _$_Player with DiagnosticableTreeMixin implements _Player {
             (identical(other.rotation, rotation) ||
                 const DeepCollectionEquality()
                     .equals(other.rotation, rotation)) &&
-            (identical(other.health, health) ||
-                const DeepCollectionEquality().equals(other.health, health)) &&
             (identical(other.color, color) ||
                 const DeepCollectionEquality().equals(other.color, color)) &&
             (identical(other.initialColor, initialColor) ||
@@ -293,7 +271,6 @@ class _$_Player with DiagnosticableTreeMixin implements _Player {
       const DeepCollectionEquality().hash(direction) ^
       const DeepCollectionEquality().hash(velocity) ^
       const DeepCollectionEquality().hash(rotation) ^
-      const DeepCollectionEquality().hash(health) ^
       const DeepCollectionEquality().hash(color) ^
       const DeepCollectionEquality().hash(initialColor) ^
       const DeepCollectionEquality().hash(attackColor);
@@ -310,7 +287,6 @@ abstract class _Player implements Player {
       Offset direction,
       double velocity,
       double rotation,
-      int health,
       Color color,
       Color initialColor,
       Color attackColor}) = _$_Player;
@@ -323,8 +299,6 @@ abstract class _Player implements Player {
   double get velocity => throw _privateConstructorUsedError;
   @override
   double get rotation => throw _privateConstructorUsedError;
-  @override
-  int get health => throw _privateConstructorUsedError;
   @override
   Color get color => throw _privateConstructorUsedError;
   @override

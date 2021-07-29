@@ -11,7 +11,6 @@ class Player with _$Player {
                   @Default(Offset.zero) Offset direction,
                   @Default(0) double velocity,
                   @Default(0) double rotation,
-                  @Default(100) int health,
                   @Default(Colors.white) Color color,
                   @Default(Colors.white) Color initialColor,
                   @Default(Colors.greenAccent) Color attackColor,}) = _Player;

@@ -10,7 +10,7 @@ class KControls extends HookWidget {
   @override
   Widget build(BuildContext context) {
 
-    final node = useFocusNode();
+    final node = useFocusNode(descendantsAreFocusable: false);
 
     final playerController = useProvider(playerFSMProvider.notifier);
 

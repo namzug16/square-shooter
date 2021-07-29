@@ -21,7 +21,7 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
 
   final Reader read;
 
-  late PlayerControllerFSM _player;
+  PlayerControllerFSM? _player;
 
   bool get gameOver => _gameOver;
   bool _gameOver = false;
@@ -41,15 +41,37 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
   static const double enemySize = 50;
   static const int maxVelocity = 15;
   static const int maxVelocityShooting = 5;
-  static const double acceleration = 0.3;
+  static const double acceleration = 0.5;
+  static const double maxDistanceToMove = 435;
   static const double rotationValue = pi / 40;
   static const double aimSizeStart = enemySize + 20;
   static const double aimSize = 100;
 
   // ? ========================================================= Methods
 
-  void init() {
-    _player = read(playerFSMProvider.notifier);
+  void init(Size size) {
+    if(_player == null){
+      _player = read(playerFSMProvider.notifier);
+    }
+    state = state.copyWith(
+        position: Offset(size.width / 2 - enemySize / 2, enemySize));
+  }
+
+  void restart(Size size){
+    _gameHasStarted = false;
+    _e = null;
+    _mS = MovementStates.Moving;
+    _aS = AttackStates.None;
+    _lS = LiveStates.Alive;
+    state = Enemy(
+      position: Offset(size.width / 2 - enemySize / 2, enemySize)
+    );
+  }
+
+  bool _gameHasStarted = false;
+
+  void startGame() {
+    _gameHasStarted = true;
   }
 
   // ! =====================================> RenderObjects
@@ -72,7 +94,10 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
     }
 
     // ? ==========================> AimLine
-    if (_aS == AttackStates.Shooting && _mS != MovementStates.Stunned) {
+    if (_aS == AttackStates.Shooting &&
+        _mS != MovementStates.Stunned &&
+        _lS == LiveStates.Alive &&
+        _gameHasStarted) {
       c.save();
       final aimPaint = Paint()
         ..color = state.attackColor
@@ -117,8 +142,8 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
     }
 
     // ? ===========================> EnemyBulletsDetection
-    if (_player.bullets.length > 0) {
-      final playerBullets = _player.bullets;
+    if (_player!.bullets.length > 0) {
+      final playerBullets = _player!.bullets;
       for (var b in playerBullets) {
         // * ======> Damage
         if (b.canDamage && b.rect.collides(rect)) {
@@ -133,49 +158,51 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
   // ! =========================================================> StateMachine
   void _stateLogic(Canvas c, x) {
     if (_lS == LiveStates.Alive) {
-      _getPossibleCollision();
       _updateRotation();
-      _setAim();
-      if (_mS == MovementStates.Moving) {
-        state = state.copyWith(color: state.initialColor);
-        _move(x);
-        if (_aS == AttackStates.Shooting) {
-          state = state.copyWith(
-              color: state.attackColor,
-              velocity:
-                  state.velocity.clamp(0, maxVelocityShooting).toDouble());
+      if (_gameHasStarted) {
+        _getPossibleCollision();
+        _setAim();
+        if (_mS == MovementStates.Moving) {
+          state = state.copyWith(color: state.initialColor);
+          _move(x);
+          if (_aS == AttackStates.Shooting) {
+            state = state.copyWith(
+                color: state.attackColor,
+                velocity:
+                    state.velocity.clamp(0, maxVelocityShooting).toDouble());
+            _cancelLaserBeam();
+            _shoot();
+          } else if (_aS == AttackStates.LaserBeam) {
+            state = state.copyWith(velocity: 0, color: state.attackColor);
+            _cancelShooting();
+            _activateLaserBeam();
+          } else {
+            // cancel attacks
+            _cancelLaserBeam();
+            _cancelShooting();
+          }
+        } else if (_mS == MovementStates.Escaping) {
+          state = state.copyWith(color: state.initialColor);
           _cancelLaserBeam();
-          _shoot();
-        } else if (_aS == AttackStates.LaserBeam) {
-          state = state.copyWith(velocity: 0, color: state.attackColor);
+          if (_aS == AttackStates.Shooting) {
+            state = state.copyWith(
+                color: state.attackColor,
+                velocity:
+                    state.velocity.clamp(0, maxVelocityShooting).toDouble());
+            _cancelLaserBeam();
+            _shoot();
+          }
+          _move(x);
+        } else if (_mS == MovementStates.Stunned) {
+          state = state.copyWith(color: Colors.redAccent);
+          // cancel attacks in case player was attacking when stunned
+          _cancelLaserBeam();
           _cancelShooting();
-          _activateLaserBeam();
-        } else {
-          // cancel attacks
-          _cancelLaserBeam();
-          _cancelShooting();
-        }
-      } else if (_mS == MovementStates.Escaping) {
-        state = state.copyWith(color: state.initialColor);
-        _cancelLaserBeam();
-        if (_aS == AttackStates.Shooting) {
-          state = state.copyWith(
-              color: state.attackColor,
-              velocity:
-                  state.velocity.clamp(0, maxVelocityShooting).toDouble());
-          _cancelLaserBeam();
-          _shoot();
-        }
-        _move(x);
-      } else if (_mS == MovementStates.Stunned) {
-        state = state.copyWith(color: Colors.redAccent);
-        // cancel attacks in case player was attacking when stunned
-        _cancelLaserBeam();
-        _cancelShooting();
-        _stun(c);
+          _stun(c);
 
-        _move(x);
-        state = state.copyWith(velocity: state.velocity.clamp(0, 2));
+          _move(x);
+          state = state.copyWith(velocity: state.velocity.clamp(0, 2));
+        }
       }
     } else {
       // cancel attacks in case player was attacking when died :c
@@ -214,14 +241,17 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
   }
 
   void _pickAState() {
-    if(_player.aS == AttackStates.LaserBeam && !_enemyInsideAim()){
-      // TODO : fix states;
+    if (!_player!.isAlive) {
+      _setState(_aS, AttackStates.None);
+      return;
+    }
+    if (_player!.aS == AttackStates.LaserBeam && !_enemyInsideAim()) {
       _aS = AttackStates.LaserBeam;
       return;
     }
-    if (state.position.distanceTo(_player.center) > 200 &&
-        _player.aS != AttackStates.Shooting &&
-        _player.mS != MovementStates.Stunned) {
+    if (state.position.distanceTo(_player!.center) > 200 &&
+        _player!.aS != AttackStates.Shooting &&
+        _player!.mS != MovementStates.Stunned) {
       if (_randBoolForNewState && _frameCountForNewState > 0) {
         _setState(_aS, AttackStates.Shooting);
       } else {
@@ -234,8 +264,8 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
       }
       return;
     }
-    if (_player.aS == AttackStates.Shooting &&
-        state.position.distanceTo(_player.center) > 100) {
+    if (_player!.aS == AttackStates.Shooting &&
+        state.position.distanceTo(_player!.center) > 100) {
       _setState(_aS, AttackStates.Shooting);
       return;
     }
@@ -243,8 +273,8 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
       _setState(_aS, AttackStates.None);
       return;
     }
-    if (_player.mS == MovementStates.Stunned) {
-      if (state.position.distanceTo(_player.center) > 150) {
+    if (_player!.mS == MovementStates.Stunned) {
+      if (state.position.distanceTo(_player!.center) > 150) {
         _setState(_aS, AttackStates.LaserBeam);
         return;
       }
@@ -291,37 +321,50 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
               .clamp(padding, x.height - padding)
               .toDouble());
     }
+    _isAccelerating = true;
     _distance = center.distanceTo(pos);
+    // if(_distance < enemySize) _getNextPosition(x);
     _angleMovement = pi / 2 - center.angleTo(pos);
     _position = pos;
   }
+
+  bool _isAccelerating = true;
 
   void _move(x) {
     if (_position == null ||
         _mS == MovementStates.Escaping ||
         state.velocity == 0) _getNextPosition(x);
 
-    if (state.position.distanceTo(_position!) < _distance / 2 ||
-        _mS == MovementStates.Escaping) {
-      state = state.copyWith(
-        velocity:
-            (state.velocity - acceleration).clamp(0, maxVelocity).toDouble(),
-        position: (state.position +
-                Offset(state.velocity * sin(_angleMovement),
-                    state.velocity * cos(_angleMovement)))
-            .clamp(
-                Offset.zero, Offset(x.width - enemySize, x.height - enemySize)),
-      );
+    if (_distance > enemySize) {
+      if ((state.position.distanceTo(_position!) <=
+          (_distance < maxDistanceToMove
+              ? (_distance / 2).ceilToDouble()
+              : maxDistanceToMove / 2))) {
+        _isAccelerating = false;
+      }
+      if (!_isAccelerating || _mS == MovementStates.Escaping) {
+        state = state.copyWith(
+          velocity:
+              (state.velocity - acceleration).clamp(0, maxVelocity).toDouble(),
+          position: (state.position +
+                  Offset(state.velocity * sin(_angleMovement),
+                      state.velocity * cos(_angleMovement)))
+              .clamp(Offset.zero,
+                  Offset(x.width - enemySize, x.height - enemySize)),
+        );
+      } else {
+        state = state.copyWith(
+          velocity:
+              (state.velocity + acceleration).clamp(0, maxVelocity).toDouble(),
+          position: (state.position +
+                  Offset(state.velocity * sin(_angleMovement),
+                      state.velocity * cos(_angleMovement)))
+              .clamp(Offset.zero,
+                  Offset(x.width - enemySize, x.height - enemySize)),
+        );
+      }
     } else {
-      state = state.copyWith(
-        velocity:
-            (state.velocity + acceleration).clamp(0, maxVelocity).toDouble(),
-        position: (state.position +
-                Offset(state.velocity * sin(_angleMovement),
-                    state.velocity * cos(_angleMovement)))
-            .clamp(
-                Offset.zero, Offset(x.width - enemySize, x.height - enemySize)),
-      );
+      state = state.copyWith(velocity: 0);
     }
   }
 
@@ -339,8 +382,8 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
     if (_mS != MovementStates.Stunned) {
       final Rect _safeArea =
           Rect.fromCircle(center: center, radius: _safeDistance);
-      if (_player.bullets.length > 0) {
-        for (var b in _player.bullets) {
+      if (_player!.bullets.length > 0) {
+        for (var b in _player!.bullets) {
           if (b.rect.collides(_safeArea)) {
             if (_savedDirectionForRecognitionBullet == null ||
                 b.direction != _savedDirectionForRecognitionBullet) {
@@ -375,7 +418,7 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
   LaserBeam? _laserBeam;
 
   void _setAim() {
-    _aim = _player.center;
+    _aim = _player!.center;
     _aimAngle = center.angleTo(_aim);
   }
 
@@ -383,7 +426,7 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
 
   void _shoot() {
     if (_t == null) {
-      _t = Timer.periodic(Duration(milliseconds: 300), (timer) {
+      _t = Timer.periodic(Duration(milliseconds: 200), (timer) {
         _bullets.add(Bullet(
           direction: _aimAngle,
           color: state.attackColor,
@@ -407,7 +450,7 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
       _laserBeam = LaserBeam(
           factor: 0.25,
           color: state.color,
-          direction: pi/2 - _aimAngle,
+          direction: pi / 2 - _aimAngle,
           origin: state.position + Offset(enemySize / 2, enemySize / 2));
     }
   }
@@ -417,7 +460,7 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
   }
 
   bool _playerInsideAim() {
-    final playerRect = _player.rect;
+    final playerRect = _player!.rect;
     if (laserBeam != null) {
       final line = laserBeam!.line;
       return playerRect.intersectsLine(line[0], line[1]);
@@ -427,11 +470,11 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
   }
 
   bool _enemyInsideAim() {
-    if (_player.aS == AttackStates.LaserBeam) {
+    if (_player!.aS == AttackStates.LaserBeam) {
       final rect = Rect.fromLTWH(
           state.position.dx, state.position.dy, enemySize, enemySize);
-      if(_player.laserBeam != null){
-        final line = _player.laserBeam!.line;
+      if (_player!.laserBeam != null) {
+        final line = _player!.laserBeam!.line;
         if (rect.intersectsLine(line[0], line[1])) {
           return true;
         }
@@ -465,8 +508,7 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
   void renderTrajectory(Canvas c) {
     if (_position != null) {
       c.save();
-      c.drawLine(
-          state.position, _position!, Paint()..color = Colors.pinkAccent);
+      c.drawLine(center, _position!, Paint()..color = Colors.pinkAccent);
       c.restore();
     }
   }
@@ -578,16 +620,18 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
       );
     }
     _e!.renderExplosion(c);
-    if (_e!.isFinished) _gameOver = true;
   }
 
   void _detectLaserBeamEnemy() {
-    if (_player.aS == AttackStates.LaserBeam && _player.laserBeam!.isFinished) {
-      final rect = Rect.fromLTWH(
-          state.position.dx, state.position.dy, enemySize, enemySize);
-      final line = _player.laserBeam!.line;
-      if (rect.intersectsLine(line[0], line[1])) {
-        _lS = LiveStates.Dead;
+    if (_player!.laserBeam != null) {
+      if (_player!.aS == AttackStates.LaserBeam &&
+          _player!.laserBeam!.isFinished) {
+        final rect = Rect.fromLTWH(
+            state.position.dx, state.position.dy, enemySize, enemySize);
+        final line = _player!.laserBeam!.line;
+        if (rect.intersectsLine(line[0], line[1])) {
+          _lS = LiveStates.Dead;
+        }
       }
     }
   }

@@ -19,10 +19,7 @@ class PlayerControllerFSM extends StateNotifier<Player> {
 
   final Reader read;
 
-  late EnemyControllerFSM _enemy;
-
-  bool get gameOver => _gameOver;
-  bool _gameOver = false;
+  EnemyControllerFSM? _enemy;
 
   bool get isHurt => _isHurt;
   bool _isHurt = false;
@@ -46,8 +43,35 @@ class PlayerControllerFSM extends StateNotifier<Player> {
 
   // ? ========================================================= Methods
 
-  void init() {
-    _enemy = read(enemyFSMProvider.notifier);
+  void init(Size size) {
+    if(_enemy == null){
+      _enemy = read(enemyFSMProvider.notifier);
+    }
+    state = state.copyWith(
+        position: Offset(
+      size.width / 2 - playerSize / 2,
+      size.height - playerSize * 2,
+    ));
+  }
+
+  void restart(Size size){
+    _gameHasStarted = false;
+    _e = null;
+    _mS = MovementStates.Moving;
+    _aS = AttackStates.None;
+    _lS = LiveStates.Alive;
+    state = Player(
+      position: Offset(
+        size.width / 2 - playerSize / 2,
+        size.height - playerSize * 2,
+      )
+    );
+  }
+
+  bool _gameHasStarted = false;
+
+  void startGame() {
+    _gameHasStarted = true;
   }
 
   // ! =====================================> RenderObjects
@@ -74,29 +98,21 @@ class PlayerControllerFSM extends StateNotifier<Player> {
         ..color = state.attackColor
         ..strokeWidth = 3
         ..strokeCap = StrokeCap.round;
-      final a = pi/2 - _aimAngle;
+      final a = pi / 2 - _aimAngle;
+      c.drawLine(center + Offset(aimSizeStart * sin(a), aimSizeStart * cos(a)),
+          center + Offset(aimSize * sin(a), aimSize * cos(a)), aimPaint);
       c.drawLine(
-          center +
-              Offset(
-                  aimSizeStart * sin(a), aimSizeStart * cos(a)),
-          center + Offset(aimSize * sin(a), aimSize * cos(a)),
-          aimPaint);
-      c.drawLine(
-        center +
-            Offset(aimSizeStart * sin(a + pi / 7),
-                aimSizeStart * cos(a + pi / 7)),
         center +
             Offset(
-                aimSizeStart * sin(a), aimSizeStart * cos(a)),
+                aimSizeStart * sin(a + pi / 7), aimSizeStart * cos(a + pi / 7)),
+        center + Offset(aimSizeStart * sin(a), aimSizeStart * cos(a)),
         aimPaint,
       );
       c.drawLine(
         center +
-            Offset(aimSizeStart * sin(a - pi / 7),
-                aimSizeStart * cos(a - pi / 7)),
-        center +
             Offset(
-                aimSizeStart * sin(a), aimSizeStart * cos(a)),
+                aimSizeStart * sin(a - pi / 7), aimSizeStart * cos(a - pi / 7)),
+        center + Offset(aimSizeStart * sin(a), aimSizeStart * cos(a)),
         aimPaint,
       );
       c.restore();
@@ -121,14 +137,12 @@ class PlayerControllerFSM extends StateNotifier<Player> {
     }
 
     // ? ===========================> EnemyBulletsDetection
-    if (_enemy.bullets.length > 0) {
-      final enemyBullets = _enemy.bullets;
+    if (_enemy!.bullets.length > 0) {
+      final enemyBullets = _enemy!.bullets;
       for (var b in enemyBullets) {
         // * =======> In case bullets collide with other bullets
         for (var pb in bullets) {
-          if (b.canDamage &&
-              pb.canDamage &&
-              pb.rect.collides(b.rect)) {
+          if (b.canDamage && pb.canDamage && pb.rect.collides(b.rect)) {
             pb.destroy();
             b.destroy();
           }
@@ -148,33 +162,39 @@ class PlayerControllerFSM extends StateNotifier<Player> {
   void _stateLogic(Canvas c, x) {
     if (_lS == LiveStates.Alive) {
       _updateRotation();
-      _setAim();
-      if (_mS == MovementStates.Moving) {
-        state = state.copyWith(color: state.initialColor);
-        _move(x);
-        if (_aS == AttackStates.Shooting) {
-          state = state.copyWith(
-              color: state.attackColor,
-              velocity:
-                  state.velocity.clamp(0, maxVelocityShooting).toDouble());
-          _shoot();
-        } else if (_aS == AttackStates.LaserBeam) {
-          state = state.copyWith(velocity: 0, color: state.attackColor);
-          _activateLaserBeam();
+      if (_gameHasStarted && _enemy!.isAlive) {
+        _setAim();
+        if (_mS == MovementStates.Moving) {
+          state = state.copyWith(color: state.initialColor);
+          _move(x);
+          if (_aS == AttackStates.Shooting) {
+            state = state.copyWith(
+                color: state.attackColor,
+                velocity:
+                    state.velocity.clamp(0, maxVelocityShooting).toDouble());
+            _shoot();
+          } else if (_aS == AttackStates.LaserBeam) {
+            state = state.copyWith(velocity: 0, color: state.attackColor);
+            _activateLaserBeam();
+          } else {
+            // cancel attacks
+            _cancelLaserBeam();
+            _cancelShooting();
+          }
         } else {
-          // cancel attacks
+          state = state.copyWith(color: Colors.redAccent);
+          // cancel attacks in case player was attacking when stunned
           _cancelLaserBeam();
           _cancelShooting();
+          _stun(c);
+
+          _move(x);
+          state = state.copyWith(velocity: state.velocity.clamp(0, 2));
         }
       } else {
-        state = state.copyWith(color: Colors.redAccent);
-        // cancel attacks in case player was attacking when stunned
+        state = state.copyWith(color: state.initialColor);
         _cancelLaserBeam();
         _cancelShooting();
-        _stun(c);
-
-        _move(x);
-        state = state.copyWith(velocity: state.velocity.clamp(0, 2));
       }
     } else {
       // cancel attacks in case player was attacking when died :c
@@ -196,9 +216,6 @@ class PlayerControllerFSM extends StateNotifier<Player> {
         if (oldState != AttackStates.None &&
             newState != AttackStates.None &&
             newState != oldState) {
-          print("Invalid Change of States");
-          print(oldState);
-          print(newState);
           // we need to save the state
           savedAttackState = oldState;
         } else {
@@ -223,13 +240,13 @@ class PlayerControllerFSM extends StateNotifier<Player> {
 
   // * KInput
   void kInput(RawKeyEvent data) {
-    if (data.logicalKey.keyLabel == "k") {
+    if (data.logicalKey.keyLabel == "K") {
       if (data.runtimeType.toString() == "RawKeyDownEvent") {
         _setState(_aS, AttackStates.Shooting);
       } else {
         _setState(_aS, AttackStates.None);
       }
-    } else if (data.logicalKey.keyLabel == "l") {
+    } else if (data.logicalKey.keyLabel == "L") {
       if (data.runtimeType.toString() == "RawKeyDownEvent") {
         _setState(_aS, AttackStates.LaserBeam);
       } else {
@@ -280,7 +297,7 @@ class PlayerControllerFSM extends StateNotifier<Player> {
       }
     } else {
       switch (data.logicalKey.keyLabel) {
-        case "a":
+        case "A":
           if (_overrideDirection) {
             _direction = Offset(1, state.direction.dy);
             _overrideDirection = false;
@@ -288,7 +305,7 @@ class PlayerControllerFSM extends StateNotifier<Player> {
             _direction = Offset(0, state.direction.dy);
           }
           break;
-        case "w":
+        case "W":
           if (_overrideDirection) {
             _direction = Offset(state.direction.dx, 1);
             _overrideDirection = false;
@@ -296,7 +313,7 @@ class PlayerControllerFSM extends StateNotifier<Player> {
             _direction = Offset(state.direction.dx, 0);
           }
           break;
-        case "d":
+        case "D":
           if (_overrideDirection) {
             _direction = Offset(-1, state.direction.dy);
             _overrideDirection = false;
@@ -304,7 +321,7 @@ class PlayerControllerFSM extends StateNotifier<Player> {
             _direction = Offset(0, state.direction.dy);
           }
           break;
-        case "s":
+        case "S":
           if (_overrideDirection) {
             _direction = Offset(state.direction.dx, -1);
             _overrideDirection = false;
@@ -363,7 +380,7 @@ class PlayerControllerFSM extends StateNotifier<Player> {
   LaserBeam? _laserBeam;
 
   void _setAim() {
-    _aim = _enemy.center;
+    _aim = _enemy!.center;
     _aimAngle = center.angleTo(_aim);
   }
 
@@ -371,7 +388,7 @@ class PlayerControllerFSM extends StateNotifier<Player> {
 
   void _shoot() {
     if (_t == null) {
-      _t = Timer.periodic(Duration(milliseconds: 300), (timer) {
+      _t = Timer.periodic(Duration(milliseconds: 200), (timer) {
         _bullets.add(Bullet(
           direction: _aimAngle,
           color: state.attackColor,
@@ -395,7 +412,7 @@ class PlayerControllerFSM extends StateNotifier<Player> {
       _laserBeam = LaserBeam(
           factor: 0.2,
           color: state.color,
-          direction: pi/2 - _aimAngle,
+          direction: pi / 2 - _aimAngle,
           origin: state.position + Offset(playerSize / 2, playerSize / 2));
     }
   }
@@ -441,10 +458,24 @@ class PlayerControllerFSM extends StateNotifier<Player> {
     c.save();
     c.translate(centerPoint.dx, centerPoint.dy);
     c.rotate(centerPoint.angleTo(center));
-    c.drawArc(Rect.fromCircle(center: Offset.zero, radius: 20), -pi/2, pi / 2,
-        false, Paint()..color = Colors.pink..style=PaintingStyle.stroke..strokeWidth=5);
-    c.drawArc(Rect.fromCircle(center: Offset.zero, radius: 20), 0, pi / 2,
-        false, Paint()..color = Colors.pink..style=PaintingStyle.stroke..strokeWidth=5);
+    c.drawArc(
+        Rect.fromCircle(center: Offset.zero, radius: 20),
+        -pi / 2,
+        pi / 2,
+        false,
+        Paint()
+          ..color = Colors.pink
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 5);
+    c.drawArc(
+        Rect.fromCircle(center: Offset.zero, radius: 20),
+        0,
+        pi / 2,
+        false,
+        Paint()
+          ..color = Colors.pink
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 5);
     c.restore();
   }
 
@@ -500,16 +531,17 @@ class PlayerControllerFSM extends StateNotifier<Player> {
       );
     }
     _e!.renderExplosion(c);
-    if (_e!.isFinished) _gameOver = true;
   }
 
   void _detectLaserBeamEnemy() {
-    if (_enemy.aS == AttackStates.LaserBeam && _enemy.laserBeam!.isFinished) {
-      final rect = Rect.fromLTWH(
-          state.position.dx, state.position.dy, playerSize, playerSize);
-      final line = _enemy.laserBeam!.line;
-      if (rect.intersectsLine(line[0], line[1])) {
-        _lS = LiveStates.Dead;
+    if (_enemy!.laserBeam != null) {
+      if (_enemy!.aS == AttackStates.LaserBeam && _enemy!.laserBeam!.isFinished) {
+        final rect = Rect.fromLTWH(
+            state.position.dx, state.position.dy, playerSize, playerSize);
+        final line = _enemy!.laserBeam!.line;
+        if (rect.intersectsLine(line[0], line[1])) {
+          _lS = LiveStates.Dead;
+        }
       }
     }
   }
