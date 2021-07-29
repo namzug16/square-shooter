@@ -258,7 +258,7 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
         _setState(_aS, AttackStates.None);
       }
       _frameCountForNewState--;
-      if (_frameCountForNewState == 0) {
+      if (_frameCountForNewState < 0) {
         _setFrameCount();
         _setBoolState();
       }

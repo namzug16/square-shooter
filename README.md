@@ -1,16 +1,17 @@
-# square_shooter
+<h1 align="center">Square Shooter</h1>
+<hr>
 
-A new Flutter project.
+## :video_game: About 
 
-## Getting Started
+Square Shooter :white_large_square: is a game inspired by [Duel (a shooter game)](https://openprocessing.org/sketch/453716) by Fal, and it's made in Flutter. 
+This game was possible thanks to the [Funvas](https://pub.dev/packages/funvas) package.
 
-This project is a starting point for a Flutter application.
+## :gear: Technologies
 
-A few resources to get you started if this is your first Flutter project:
+Tools used in this project:
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+ - [Flutter](https://flutter.dev/)
+ - [Funvas](https://pub.dev/packages/funvas)
+ - [Riverpod](https://pub.dev/packages/riverpod)
+ - [Hooks](https://pub.dev/packages/flutter_hooks)
+ - [Freezed](https://pub.dev/packages/freezed)
