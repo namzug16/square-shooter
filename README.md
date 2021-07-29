@@ -1,5 +1,4 @@
 <h1 align="center">Square Shooter</h1>
-<hr>
 
 ## :video_game: About 
 
