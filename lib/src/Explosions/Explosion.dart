@@ -25,24 +25,22 @@ class Explosion {
 
   bool get isFinished => _isFinished();
 
-  List<Particle>? particles = [];
+  List<Particle> particles = [];
   void renderExplosion(Canvas c){
-  if(particles != null && particles!.length < 1) _generateParticles();
+  if(particles.length < 1) _generateParticles();
 
-  if(particles != null){
-      for (var p in particles!) {
-        if (p.opacity == 0) particles!.remove(p);
+  if(particles.length > 1 && !_isFinished()){
+      for (var p in particles) {
+        if (p.opacity == 0) particles.remove(p);
         p.renderParticle(c);
       }
     }
-
-    if( particles != null && particles!.isEmpty) particles = null;
   }
 
   void _generateParticles(){
     final angle = 2*pi/amountParticles;
     for(var i = 0; i < amountParticles; i++){
-      particles!.add(
+      particles.add(
         Particle(
           initialVelocity: velocityParticles,
           size: sizeParticles,
@@ -56,7 +54,15 @@ class Explosion {
   }
 
   bool _isFinished(){
-    return particles == null;
+    if(particles.length > 1){
+      if(particles[0].opacity <= 0){
+        return true;
+      }else{
+        return false;
+      }
+    }
+    return false;
+    // return particles == null;
   }
 
 }

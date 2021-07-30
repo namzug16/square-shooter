@@ -44,7 +44,7 @@ class PlayerControllerFSM extends StateNotifier<Player> {
   // ? ========================================================= Methods
 
   void init(Size size) {
-    if(_enemy == null){
+    if (_enemy == null) {
       _enemy = read(enemyFSMProvider.notifier);
     }
     state = state.copyWith(
@@ -54,18 +54,17 @@ class PlayerControllerFSM extends StateNotifier<Player> {
     ));
   }
 
-  void restart(Size size){
+  void restart(Size size) {
     _gameHasStarted = false;
-    _e = null;
     _mS = MovementStates.Moving;
     _aS = AttackStates.None;
     _lS = LiveStates.Alive;
+    _e = null;
     state = Player(
-      position: Offset(
-        size.width / 2 - playerSize / 2,
-        size.height - playerSize * 2,
-      )
-    );
+        position: Offset(
+      size.width / 2 - playerSize / 2,
+      size.height - playerSize * 2,
+    ));
   }
 
   bool _gameHasStarted = false;
@@ -124,10 +123,21 @@ class PlayerControllerFSM extends StateNotifier<Player> {
         b.renderBullet(c);
         if (b.canDamage &&
             b.rect.outsideRegion(Rect.fromLTWH(0, 0, x.width, x.height))) {
-          _bullets.remove(b);
+          if(_indexBulletToRemove == null){
+            _indexBulletToRemove = _bullets.indexOf(b);
+          }
         }
-        if (b.shouldBeEliminated) _bullets.remove(b);
+        if (b.shouldBeEliminated && _indexBulletToRemove == null){
+          _indexBulletToRemove = _bullets.indexOf(b);
+        }
+
       }
+
+      if(_indexBulletToRemove != null){
+        _bullets.removeAt(_indexBulletToRemove!);
+        _indexBulletToRemove = null;
+      }
+
     }
 
     // ? ===========================> LaseBeam
@@ -241,13 +251,13 @@ class PlayerControllerFSM extends StateNotifier<Player> {
   // * KInput
   void kInput(RawKeyEvent data) {
     if (data.logicalKey.keyLabel == "K") {
-      if (data.runtimeType.toString() == "RawKeyDownEvent") {
+      if (data.character != null) {
         _setState(_aS, AttackStates.Shooting);
       } else {
         _setState(_aS, AttackStates.None);
       }
     } else if (data.logicalKey.keyLabel == "L") {
-      if (data.runtimeType.toString() == "RawKeyDownEvent") {
+      if (data.character != null) {
         _setState(_aS, AttackStates.LaserBeam);
       } else {
         _setState(_aS, AttackStates.None);
@@ -260,76 +270,78 @@ class PlayerControllerFSM extends StateNotifier<Player> {
   // * Movement
 
   void _setDirection(RawKeyEvent data) {
-    if (data.runtimeType.toString() == "RawKeyDownEvent") {
-      switch (data.character) {
-        case "a":
+    // if (data.runtimeType.toString() == "RawKeyDownEvent") {
+    // TODO: change runtimeType recognition...it doesnt work on build version
+    switch (data.logicalKey.keyLabel) {
+      case "A":
+        if (data.character != null) {
           if (state.direction.dx == 0) {
             _direction = Offset(-1, state.direction.dy);
           } else if (state.direction.dx == 1) {
             _direction = Offset(0, state.direction.dy);
             _overrideDirection = true;
           }
-          break;
-        case "w":
+        } else {
+          if (_overrideDirection) {
+            _direction = Offset(1, state.direction.dy);
+            _overrideDirection = false;
+          } else {
+            _direction = Offset(0, state.direction.dy);
+          }
+        }
+        break;
+      case "W":
+        if (data.character != null) {
           if (state.direction.dy == 0) {
             _direction = Offset(state.direction.dx, -1);
           } else if (state.direction.dy == 1) {
             _direction = Offset(state.direction.dx, 0);
             _overrideDirection = true;
           }
-          break;
-        case "d":
+        } else {
+          if (_overrideDirection) {
+            _direction = Offset(state.direction.dx, 1);
+            _overrideDirection = false;
+          } else {
+            _direction = Offset(state.direction.dx, 0);
+          }
+        }
+
+        break;
+      case "D":
+        if (data.character != null) {
           if (state.direction.dx == 0) {
             _direction = Offset(1, state.direction.dy);
           } else if (state.direction.dx == -1) {
             _direction = Offset(0, state.direction.dy);
             _overrideDirection = true;
           }
-          break;
-        case "s":
-          if (state.direction.dy == 0) {
-            _direction = Offset(state.direction.dx, 1);
-          } else if (state.direction.dy == -1) {
-            _direction = Offset(state.direction.dx, 0);
-            _overrideDirection = true;
-          }
-          break;
-      }
-    } else {
-      switch (data.logicalKey.keyLabel) {
-        case "A":
-          if (_overrideDirection) {
-            _direction = Offset(1, state.direction.dy);
-            _overrideDirection = false;
-          } else {
-            _direction = Offset(0, state.direction.dy);
-          }
-          break;
-        case "W":
-          if (_overrideDirection) {
-            _direction = Offset(state.direction.dx, 1);
-            _overrideDirection = false;
-          } else {
-            _direction = Offset(state.direction.dx, 0);
-          }
-          break;
-        case "D":
+        } else {
           if (_overrideDirection) {
             _direction = Offset(-1, state.direction.dy);
             _overrideDirection = false;
           } else {
             _direction = Offset(0, state.direction.dy);
           }
-          break;
-        case "S":
+        }
+        break;
+      case "S":
+        if (data.character != null) {
+          if (state.direction.dy == 0) {
+            _direction = Offset(state.direction.dx, 1);
+          } else if (state.direction.dy == -1) {
+            _direction = Offset(state.direction.dx, 0);
+            _overrideDirection = true;
+          }
+        } else {
           if (_overrideDirection) {
             _direction = Offset(state.direction.dx, -1);
             _overrideDirection = false;
           } else {
             _direction = Offset(state.direction.dx, 0);
           }
-          break;
-      }
+        }
+        break;
     }
 
     if (_direction != Offset.zero) _oldDirection = _direction;
@@ -375,6 +387,7 @@ class PlayerControllerFSM extends StateNotifier<Player> {
 
   List<Bullet> get bullets => _bullets;
   List<Bullet> _bullets = [];
+  int? _indexBulletToRemove;
 
   LaserBeam? get laserBeam => _laserBeam;
   LaserBeam? _laserBeam;
@@ -535,7 +548,8 @@ class PlayerControllerFSM extends StateNotifier<Player> {
 
   void _detectLaserBeamEnemy() {
     if (_enemy!.laserBeam != null) {
-      if (_enemy!.aS == AttackStates.LaserBeam && _enemy!.laserBeam!.isFinished) {
+      if (_enemy!.aS == AttackStates.LaserBeam &&
+          _enemy!.laserBeam!.isFinished) {
         final rect = Rect.fromLTWH(
             state.position.dx, state.position.dy, playerSize, playerSize);
         final line = _enemy!.laserBeam!.line;

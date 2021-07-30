@@ -129,10 +129,20 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
         b.renderBullet(c);
         if (b.canDamage &&
             b.rect.outsideRegion(Rect.fromLTWH(0, 0, x.width, x.height))) {
-          _bullets.remove(b);
+          if(_indexBulletToRemove == null){
+            _indexBulletToRemove = _bullets.indexOf(b);
+          }
         }
-        if (b.shouldBeEliminated) _bullets.remove(b);
+        if (b.shouldBeEliminated && _indexBulletToRemove == null){
+          _indexBulletToRemove = _bullets.indexOf(b);
+        }
       }
+
+      if(_indexBulletToRemove != null){
+        _bullets.removeAt(_indexBulletToRemove!);
+        _indexBulletToRemove = null;
+      }
+
     }
 
     // ? ===========================> LaseBeam
@@ -413,6 +423,7 @@ class EnemyControllerFSM extends StateNotifier<Enemy> {
 
   List<Bullet> get bullets => _bullets;
   List<Bullet> _bullets = [];
+  int? _indexBulletToRemove;
 
   LaserBeam? get laserBeam => _laserBeam;
   LaserBeam? _laserBeam;
