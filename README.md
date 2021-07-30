@@ -5,6 +5,12 @@
 Square Shooter :white_large_square: is a game inspired by [Duel (a shooter game)](https://openprocessing.org/sketch/453716) by Fal, and it's made in Flutter. 
 This game was possible thanks to the [Funvas](https://pub.dev/packages/funvas) package.
 
+
+## :heavy_check_mark: Try it out!!!
+
+[Square Shooter](https://namzug16.github.io/square-shooter/)
+
+
 ## :gear: Technologies
 
 Tools used in this project:
